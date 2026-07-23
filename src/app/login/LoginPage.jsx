@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../core/hooks/useAuth';
 import { api } from '../../core/api/client';
 import { useNavigate } from 'react-router-dom';
-import { KeyRound, Mail, User as UserIcon, Shield, Eye, EyeOff } from 'lucide-react';
+import { KeyRound, Mail, User as UserIcon, Shield, Eye, EyeOff, Phone } from 'lucide-react';
 
 export default function LoginPage() {
   const { login, isAuthenticated } = useAuth();
@@ -12,11 +12,13 @@ export default function LoginPage() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('USER'); // USER, HOST, SUPER_ADMIN
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [suggestionFeedback, setSuggestionFeedback] = useState(false);
 
   // If already authenticated, go home
   React.useEffect(() => {
@@ -25,6 +27,51 @@ export default function LoginPage() {
     }
   }, [isAuthenticated, navigate]);
 
+  const getPasswordValidationStates = (pass) => {
+    return {
+      length: pass.length >= 8,
+      uppercase: /[A-Z]/.test(pass),
+      lowercase: /[a-z]/.test(pass),
+      number: /[0-9]/.test(pass),
+      special: /[@$!%*?&#]/.test(pass)
+    };
+  };
+
+  const validationStates = getPasswordValidationStates(password);
+  const metCount = Object.values(validationStates).filter(Boolean).length;
+
+  const handleSuggestPassword = () => {
+    const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const lowercase = 'abcdefghijklmnopqrstuvwxyz';
+    const numbers = '0123456789';
+    const special = '@$!%*?&#';
+    
+    let generated = '';
+    generated += uppercase[Math.floor(Math.random() * uppercase.length)];
+    generated += lowercase[Math.floor(Math.random() * lowercase.length)];
+    generated += numbers[Math.floor(Math.random() * numbers.length)];
+    generated += special[Math.floor(Math.random() * special.length)];
+    
+    const allChars = uppercase + lowercase + numbers + special;
+    for (let i = 4; i < 14; i++) {
+      generated += allChars[Math.floor(Math.random() * allChars.length)];
+    }
+    
+    const shuffled = generated.split('').sort(() => 0.5 - Math.random()).join('');
+    
+    setPassword(shuffled);
+    setShowPassword(true);
+    
+    navigator.clipboard.writeText(shuffled)
+      .then(() => {
+        setSuggestionFeedback(true);
+        setTimeout(() => setSuggestionFeedback(false), 3000);
+      })
+      .catch((err) => {
+        console.error('Failed to copy password:', err);
+      });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -32,8 +79,17 @@ export default function LoginPage() {
 
     try {
       if (isSignUp) {
+        if (phoneNumber.length !== 10) {
+          throw new Error('Please enter a valid 10-digit phone number.');
+        }
+
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/;
+        if (!passwordRegex.test(password)) {
+          throw new Error('Password does not meet the strength requirements.');
+        }
+
         // Sign Up
-        const response = await api.post('/auth/signup', { name, email, password, role });
+        const response = await api.post('/auth/signup', { name, email, password, role, phoneNumber });
         login(response.data.user);
       } else {
         // Login
@@ -125,8 +181,43 @@ export default function LoginPage() {
               </div>
             </div>
 
+            {isSignUp && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Phone className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    type="tel"
+                    required
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent text-sm"
+                    placeholder="10-digit number"
+                  />
+                </div>
+              </div>
+            )}
+
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+              <div className="flex justify-between items-center mb-1">
+                <label className="block text-sm font-medium text-gray-700">Password</label>
+                {isSignUp && (
+                  <div className="flex items-center gap-2">
+                    {suggestionFeedback && (
+                      <span className="text-[10px] text-emerald-600 font-medium animate-pulse">Suggested & Copied!</span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={handleSuggestPassword}
+                      className="text-xs font-semibold text-accent hover:text-accent-hover transition-colors focus:outline-none"
+                    >
+                      Suggest Strong Password
+                    </button>
+                  </div>
+                )}
+              </div>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <KeyRound className="h-5 w-5 text-gray-400" />
@@ -151,6 +242,47 @@ export default function LoginPage() {
                   )}
                 </button>
               </div>
+
+              {isSignUp && password && (
+                <div className="mt-2 space-y-2 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-500 font-medium">Strength:</span>
+                    <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden flex gap-0.5">
+                      <div className={`h-full transition-all duration-300 ${
+                        metCount <= 2 ? 'bg-red-500 w-1/3' : metCount <= 4 ? 'bg-amber-500 w-2/3' : 'bg-emerald-500 w-full'
+                      }`} />
+                    </div>
+                    <span className={`font-semibold ${
+                      metCount <= 2 ? 'text-red-500' : metCount <= 4 ? 'text-amber-500' : 'text-emerald-500'
+                    }`}>
+                      {metCount <= 2 ? 'Weak' : metCount <= 4 ? 'Medium' : 'Strong'}
+                    </span>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-1 text-gray-500 bg-gray-50 p-2.5 rounded-lg border border-gray-100">
+                    <div className={`flex items-center gap-1.5 ${validationStates.length ? 'text-emerald-600' : 'text-gray-400'}`}>
+                      <span className="text-sm font-bold">{validationStates.length ? '✓' : '○'}</span>
+                      <span>Min 8 characters</span>
+                    </div>
+                    <div className={`flex items-center gap-1.5 ${validationStates.uppercase ? 'text-emerald-600' : 'text-gray-400'}`}>
+                      <span className="text-sm font-bold">{validationStates.uppercase ? '✓' : '○'}</span>
+                      <span>Uppercase letter</span>
+                    </div>
+                    <div className={`flex items-center gap-1.5 ${validationStates.lowercase ? 'text-emerald-600' : 'text-gray-400'}`}>
+                      <span className="text-sm font-bold">{validationStates.lowercase ? '✓' : '○'}</span>
+                      <span>Lowercase letter</span>
+                    </div>
+                    <div className={`flex items-center gap-1.5 ${validationStates.number ? 'text-emerald-600' : 'text-gray-400'}`}>
+                      <span className="text-sm font-bold">{validationStates.number ? '✓' : '○'}</span>
+                      <span>Number (0-9)</span>
+                    </div>
+                    <div className={`flex items-center gap-1.5 ${validationStates.special ? 'text-emerald-600' : 'text-gray-400'}`}>
+                      <span className="text-sm font-bold">{validationStates.special ? '✓' : '○'}</span>
+                      <span>Special (@$!%*?&#)</span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {isSignUp && (
