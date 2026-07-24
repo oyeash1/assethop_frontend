@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../../core/api/client';
 import { useAuth } from '../../core/hooks/useAuth';
-import { Calendar, Shield, CreditCard, Tag, User, MapPin } from 'lucide-react';
+import { Calendar, Shield, CreditCard, Tag, User, MapPin, ShieldAlert } from 'lucide-react';
 
 export default function ListingDetailsPage() {
   const { id } = useParams();
@@ -368,22 +368,42 @@ export default function ListingDetailsPage() {
             </div>
 
             {/* Call To Action */}
-            <button
-              onClick={handleRentNow}
-              disabled={bookingLoading || item.status !== 'AVAILABLE'}
-              className="w-full mt-6 py-3.5 bg-accent hover:bg-accent-hover text-white font-bold rounded-xl transition-all duration-200 shadow-md shadow-accent/20 flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              {bookingLoading ? (
-                <span>Generating Order...</span>
-              ) : item.status !== 'AVAILABLE' ? (
-                <span>Item Currently Booked</span>
-              ) : (
-                <>
-                  <CreditCard className="h-4 w-4" />
-                  <span>Pay & Rent Now</span>
-                </>
-              )}
-            </button>
+            {isAuthenticated && user?.kycStatus !== 'VERIFIED' ? (
+              <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-3">
+                <div className="flex gap-2">
+                  <ShieldAlert className="h-5 w-5 text-amber-600 shrink-0" />
+                  <div className="space-y-1">
+                    <p className="text-xs font-bold text-amber-800">KYC Verification Required</p>
+                    <p className="text-[10px] text-amber-650 leading-relaxed font-medium">
+                      You must complete your KYC verification (Aadhar and PAN) before you can rent items.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => navigate('/profile')}
+                  className="w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-lg transition-all cursor-pointer"
+                >
+                  Verify KYC Profile
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={handleRentNow}
+                disabled={bookingLoading || item.status !== 'AVAILABLE'}
+                className="w-full mt-6 py-3.5 bg-accent hover:bg-accent-hover text-white font-bold rounded-xl transition-all duration-200 shadow-md shadow-accent/20 flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+              >
+                {bookingLoading ? (
+                  <span>Generating Order...</span>
+                ) : item.status !== 'AVAILABLE' ? (
+                  <span>Item Currently Booked</span>
+                ) : (
+                  <>
+                    <CreditCard className="h-4 w-4" />
+                    <span>Pay & Rent Now</span>
+                  </>
+                )}
+              </button>
+            )}
             <p className="text-[10px] text-gray-400 text-center mt-3">
               Payments are held securely in escrow until physical handover is verified via OTP.
             </p>

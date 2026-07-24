@@ -8,41 +8,12 @@ import LoginPage from './app/login/LoginPage';
 import LandingPage from './app/landing/LandingPage';
 import ListingDetailsPage from './app/listing/ListingDetailsPage';
 import DashboardPage from './app/dashboard/DashboardPage';
+import ProfilePage from './app/profile/ProfilePage';
 import { Compass, User, LogOut, ShieldAlert, Sparkles, LayoutDashboard, Mail, ShieldCheck, X, Upload } from 'lucide-react';
 
 function NavigationBar() {
-  const { isAuthenticated, user, logout, cibil, setCibil, updateUser } = useAuth();
+  const { isAuthenticated, user, logout, cibil, setCibil } = useAuth();
   const navigate = useNavigate();
-  const [isProfileOpen, setIsProfileOpen] = React.useState(false);
-  const [isUploading, setIsUploading] = React.useState(false);
-
-  const handleProfileImageUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    setIsUploading(true);
-    const formData = new FormData();
-    formData.append('image', file);
-
-    try {
-      const res = await api.post('/listings/upload', formData);
-      if (res?.status === 'success') {
-        const updateRes = await api.put('/auth/profile', {
-          name: user.name,
-          email: user.email,
-          profileImage: res.url
-        });
-        if (updateRes?.status === 'success') {
-          updateUser(updateRes.data);
-          alert('🎉 Profile image updated successfully!');
-        }
-      }
-    } catch (err) {
-      alert(`Profile update failed: ${err.message}`);
-    } finally {
-      setIsUploading(false);
-    }
-  };
 
   return (
     <header className="bg-primary text-white border-b border-primary-dark sticky top-0 z-50 shadow-md">
@@ -102,7 +73,7 @@ function NavigationBar() {
             {isAuthenticated ? (
               <div className="flex items-center gap-4 border-l border-gray-700 pl-6">
                 <button
-                  onClick={() => setIsProfileOpen(true)}
+                  onClick={() => navigate('/profile')}
                   className="flex items-center gap-2.5 hover:opacity-90 transition-all focus:outline-none cursor-pointer group text-left"
                   title="View Profile"
                 >
@@ -143,93 +114,6 @@ function NavigationBar() {
         </div>
       </div>
 
-      {/* User Profile Modal */}
-      {isProfileOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-md animate-fade-in p-4">
-          <div className="bg-white text-primary rounded-3xl border border-gray-150 p-8 max-w-md w-full relative shadow-2xl space-y-6 transform scale-100 transition-all duration-300">
-            {/* Close Button */}
-            <button
-              onClick={() => setIsProfileOpen(false)}
-              className="absolute top-5 right-5 p-2 hover:bg-gray-100 rounded-full transition-all text-gray-400 hover:text-gray-600 focus:outline-none"
-            >
-              <X className="h-4 w-4" />
-            </button>
-
-            <div className="flex flex-col items-center text-center space-y-4 border-b border-gray-100 pb-5">
-              <div className="relative group">
-                <div className="h-20 w-20 bg-gradient-to-tr from-accent to-accent-light text-white rounded-full flex items-center justify-center text-3xl font-black shadow-lg shadow-accent/15 border-2 border-white ring-4 ring-accent/10 overflow-hidden">
-                  {user?.profileImage ? (
-                    <img src={user.profileImage} alt="Profile" className="w-full h-full object-cover" />
-                  ) : (
-                    user?.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase() : 'U'
-                  )}
-                </div>
-                {/* Upload Hover Overlay */}
-                <label className="absolute inset-0 bg-black/60 rounded-full flex flex-col items-center justify-center text-white text-[9px] font-bold opacity-0 group-hover:opacity-100 cursor-pointer transition-all duration-200 border-2 border-white">
-                  <Upload className="h-4 w-4 mb-0.5" />
-                  {isUploading ? 'Uploading...' : 'Change'}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleProfileImageUpload}
-                    className="hidden"
-                  />
-                </label>
-              </div>
-              <div>
-                <h3 className="text-xl font-extrabold text-gray-900 tracking-tight">{user?.name}</h3>
-                <span className="inline-flex mt-1 px-3 py-1 bg-accent/10 text-accent text-[10px] font-extrabold uppercase rounded-full tracking-widest">
-                  {user?.role}
-                </span>
-              </div>
-            </div>
-
-            {/* Profile Fields */}
-            <div className="space-y-4 pt-1">
-              {/* Email */}
-              <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-xl border border-gray-100 text-left">
-                <Mail className="h-5 w-5 text-gray-400 shrink-0" />
-                <div>
-                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Email Address</p>
-                  <p className="text-xs font-semibold text-gray-700 mt-0.5">{user?.email}</p>
-                </div>
-              </div>
-
-              {/* Simulated CIBIL */}
-              <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-xl border border-gray-100 text-left">
-                <Sparkles className="h-5 w-5 text-yellow-500 shrink-0 animate-pulse" />
-                <div>
-                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Simulated CIBIL Trust Score</p>
-                  <p className="text-xs font-extrabold text-gray-700 mt-0.5">{cibil} / 900</p>
-                </div>
-              </div>
-
-              {/* KYC Verification Status */}
-              <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-xl border border-gray-100 text-left">
-                <ShieldCheck className="h-5 w-5 text-green-500 shrink-0" />
-                <div>
-                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">KYC Status</p>
-                  <span className={`inline-flex items-center gap-1 mt-1 px-2 py-0.5 text-[10px] font-extrabold rounded ${
-                    cibil >= 750 ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
-                  }`}>
-                    {cibil >= 750 ? 'VERIFIED (Tier 1 Trust)' : 'PENDING (Waiver Locked)'}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Close Button */}
-            <div className="pt-2">
-              <button
-                onClick={() => setIsProfileOpen(false)}
-                className="w-full py-3.5 bg-accent hover:bg-accent-hover text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-accent/15 focus:outline-none"
-              >
-                Close Profile Panel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </header>
   );
 }
@@ -283,6 +167,7 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/listing/:id" element={<ListingDetailsPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
           </Routes>
         </div>
         {!isAuthenticated && (

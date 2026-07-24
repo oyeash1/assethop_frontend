@@ -5,7 +5,7 @@ import { useAuth } from '../../core/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import io from 'socket.io-client';
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
-import { Plus, Grid, List, Sparkles, MapPin, Key, CheckCircle, Truck, Package, Edit, Trash2, Upload, X } from 'lucide-react';
+import { Plus, Grid, List, Sparkles, MapPin, Key, CheckCircle, Truck, Package, Edit, Trash2, Upload, X, AlertTriangle } from 'lucide-react';
 import L from 'leaflet';
 
 const hostIcon = new L.Icon({
@@ -904,7 +904,26 @@ export default function DashboardPage() {
                 List a Premium Rental Asset
               </h3>
 
-              <form onSubmit={handleAddListingSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {user?.kycStatus !== 'VERIFIED' ? (
+                <div className="py-12 px-6 text-center space-y-6 max-w-md mx-auto">
+                  <div className="w-16 h-16 bg-amber-50 border border-amber-200 rounded-full flex items-center justify-center text-amber-600 mx-auto">
+                    <AlertTriangle className="h-8 w-8" />
+                  </div>
+                  <div className="space-y-2">
+                    <h4 className="text-lg font-bold text-gray-900">KYC Verification Required</h4>
+                    <p className="text-sm text-gray-500 leading-relaxed">
+                      To maintain a safe rental community, all hosts are required to complete KYC verification before listing products.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => navigate('/profile')}
+                    className="w-full py-3 bg-accent hover:bg-accent-hover text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-accent/15 cursor-pointer"
+                  >
+                    Go to KYC Document Center
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleAddListingSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 
                 {/* Form Fields */}
                 <div className="space-y-4">
@@ -1063,7 +1082,8 @@ export default function DashboardPage() {
                   <p className="text-[10px] text-gray-400 italic mt-2">Click on the map above to select where this asset is stored or can be picked up.</p>
                 </div>
 
-              </form>
+                </form>
+              )}
             </div>
           )}
         </div>
