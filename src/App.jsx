@@ -42,6 +42,13 @@ function NavigationBar() {
                   Dashboard
                 </Link>
 
+                {user?.role === 'SUPER_ADMIN' && (
+                  <a href="http://localhost:5174" target="_blank" rel="noreferrer" className="text-sm font-semibold text-gray-300 hover:text-white transition-all flex items-center gap-1.5 bg-accent/20 px-3 py-1 rounded-xl border border-accent/30 text-accent-light">
+                    <ShieldAlert className="h-4 w-4 text-accent" />
+                    Admin Portal
+                  </a>
+                )}
+
                 {/* CIBIL Score Trust Simulator widget in header */}
                 <div className="bg-primary-light border border-gray-700/60 rounded-xl px-3 py-1.5 flex items-center gap-3">
                   <div className="hidden sm:block">
