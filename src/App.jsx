@@ -130,6 +130,8 @@ function HomeRoute() {
   return isAuthenticated ? <HomePage /> : <LandingPage />;
 }
 
+import { Toaster } from 'react-hot-toast';
+
 function App() {
   const { isAuthenticated, login, logout } = useAuth();
   const [loading, setLoading] = React.useState(true);
@@ -166,6 +168,7 @@ function App() {
 
   return (
     <Router>
+      <Toaster position="top-right" />
       <div className="min-h-screen bg-bgmain text-primary flex flex-col justify-between selection:bg-accent/30 selection:text-primary">
         <div>
           <NavigationBar />

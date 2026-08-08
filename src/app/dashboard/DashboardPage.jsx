@@ -3,9 +3,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../../core/api/client';
 import { useAuth } from '../../core/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 import io from 'socket.io-client';
-import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
-import { Plus, Grid, List, Sparkles, MapPin, Key, CheckCircle, Truck, Package, Edit, Trash2, Upload, X, AlertTriangle } from 'lucide-react';
+import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents, Polyline } from 'react-leaflet';
+import { Plus, Grid, List, Sparkles, MapPin, Key, CheckCircle, Truck, Package, Edit, Trash2, Upload, X, AlertTriangle, Camera, Clock, Navigation, Check, ChevronRight } from 'lucide-react';
 import L from 'leaflet';
 
 const hostIcon = new L.Icon({
@@ -113,6 +114,171 @@ export default function DashboardPage() {
   const [deletingItem, setDeletingItem] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState('');
+
+  // Renter sequential step overrides
+  const [renterSteps, setRenterSteps] = useState({});
+  const [userLocations, setUserLocations] = useState({});
+  const [capturedPhotos, setCapturedPhotos] = useState({});
+  const [photoUploading, setPhotoUploading] = useState({});
+  const [returnOtpFields, setReturnOtpFields] = useState({});
+  const [now, setNow] = useState(new Date());
+
+  // Real-time ticking clock for timers
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNow(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Set user simulated location offset for navigation step
+  useEffect(() => {
+    if (rentals.length > 0) {
+      rentals.forEach(booking => {
+        if (booking.listingId?.location?.coordinates && !userLocations[booking._id]) {
+          const [lng, lat] = booking.listingId.location.coordinates;
+          // Set a slightly offset user location to simulate distance (~350 meters)
+          setUserLocations(prev => ({
+            ...prev,
+            [booking._id]: [lat + 0.0022, lng - 0.0022] // [latitude, longitude]
+          }));
+        }
+      });
+    }
+  }, [rentals]);
+
+  // Automatic background polling to synchronize booking status updates
+  useEffect(() => {
+    let intervalId;
+    if (isAuthenticated) {
+      const hasPendingTransitions = 
+        (user.role === 'USER' && rentals.some(r => r.status === 'REQUESTED' || r.status === 'ACTIVE')) ||
+        (user.role === 'HOST' && hostRequests.some(r => r.status === 'REQUESTED' || r.status === 'ACTIVE'));
+
+      if (hasPendingTransitions) {
+        intervalId = setInterval(() => {
+          silentLoadData();
+        }, 4000);
+      }
+    }
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [rentals, hostRequests, isAuthenticated]);
+
+  const silentLoadData = async () => {
+    try {
+      if (user.role === 'USER') {
+        const res = await api.get('/bookings/my-rentals');
+        if (res?.status === 'success') {
+          setRentals(res.data);
+        }
+      } else if (user.role === 'HOST' && activeTab === 'bookings') {
+        const res = await api.get('/bookings/host-requests');
+        if (res?.status === 'success') {
+          setHostRequests(res.data);
+        }
+      }
+    } catch (err) {
+      console.error('Silent data sync error:', err);
+    }
+  };
+
+  const getHaversineDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371e3; // meters
+    const phi1 = (lat1 * Math.PI) / 180;
+    const phi2 = (lat2 * Math.PI) / 180;
+    const deltaPhi = ((lat2 - lat1) * Math.PI) / 180;
+    const deltaLambda = ((lon2 - lon1) * Math.PI) / 180;
+
+    const a =
+      Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
+      Math.cos(phi1) * Math.cos(phi2) * Math.sin(deltaLambda / 2) * Math.sin(deltaLambda / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c; // distance in meters
+  };
+
+  const formatDuration = (ms) => {
+    if (isNaN(ms) || ms < 0) return '00h 00m 00s';
+    const totalSecs = Math.floor(ms / 1000);
+    const hours = Math.floor(totalSecs / 3600);
+    const mins = Math.floor((totalSecs % 3600) / 60);
+    const secs = totalSecs % 60;
+    return `${hours.toString().padStart(2, '0')}h ${mins.toString().padStart(2, '0')}m ${secs.toString().padStart(2, '0')}s`;
+  };
+
+  const handlePickupPhotoCapture = async (e, bookingId) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setPhotoUploading(prev => ({ ...prev, [bookingId]: true }));
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+      const res = await api.post('/listings/upload', formData);
+      if (res?.status === 'success') {
+        setCapturedPhotos(prev => {
+          const current = prev[bookingId] || [];
+          return {
+            ...prev,
+            [bookingId]: [...current, res.url]
+          };
+        });
+      }
+    } catch (err) {
+      alert(`Photo capture failed to upload: ${err.message}`);
+    } finally {
+      setPhotoUploading(prev => ({ ...prev, [bookingId]: false }));
+    }
+  };
+
+  const removeCapturedPhoto = (bookingId, index) => {
+    setCapturedPhotos(prev => {
+      const current = prev[bookingId] || [];
+      return {
+        ...prev,
+        [bookingId]: current.filter((_, i) => i !== index)
+      };
+    });
+  };
+
+  const handleUploadAndLockPhotos = async (bookingId) => {
+    const photos = capturedPhotos[bookingId] || [];
+    if (photos.length < 2) {
+      alert('Please capture at least 2 live photos of the asset before proceeding.');
+      return;
+    }
+
+    try {
+      const res = await api.post('/bookings/upload-pickup-photos', { bookingId, photos });
+      if (res?.status === 'success') {
+        alert('🎉 Pickup photos uploaded and locked successfully.');
+        loadData();
+      }
+    } catch (err) {
+      alert(`Failed to save pickup photos: ${err.message}`);
+    }
+  };
+
+  const handleVerifyReturnOtp = async (bookingId) => {
+    const otp = returnOtpFields[bookingId];
+    if (!otp) {
+      alert('Please enter the 6-digit Return OTP.');
+      return;
+    }
+
+    try {
+      const res = await api.post('/bookings/verify-return', { bookingId, otp });
+      if (res?.status === 'success') {
+        alert('🎉 Return OTP Verified! Rental is now COMPLETED.');
+        loadData();
+      }
+    } catch (err) {
+      alert(`Return verification failed: ${err.message}`);
+    }
+  };
 
   // Image Upload Handlers
   const handleImageUpload = async (e, isEditing = false) => {
@@ -389,6 +555,15 @@ export default function DashboardPage() {
   // Host action: Add new listing
   const handleAddListingSubmit = async (e) => {
     e.preventDefault();
+
+    // Guard payout configuration
+    if (!user.payoutDetails?.isPayoutConfigured) {
+      toast.error('Please configure your Payout Details in Profile Settings to receive rental earnings.', {
+        duration: 6000,
+      });
+      return;
+    }
+
     setFormLoading(true);
     try {
       const payload = {
@@ -509,122 +684,372 @@ export default function DashboardPage() {
                 const isTracking = liveLocations[booking._id];
                 const mapCenter = isTracking ? liveLocations[booking._id] : [19.0760, 72.8777];
 
+                // Determine Renter current step
+                let currentStep = 1;
+                if (booking.status === 'COMPLETED') {
+                  currentStep = 5;
+                } else if (booking.status === 'ACTIVE') {
+                  currentStep = 4;
+                } else if (booking.status === 'REQUESTED') {
+                  if (booking.pickupPhotos && booking.pickupPhotos.length > 0) {
+                    currentStep = 3;
+                  } else if (renterSteps[booking._id] === 2) {
+                    currentStep = 2;
+                  } else {
+                    currentStep = 1;
+                  }
+                }
+
+                // Step 1: navigation details
+                const userPos = userLocations[booking._id];
+                const shopCoords = booking.listingId?.location?.coordinates || [72.8777, 19.0760];
+                const distanceM = userPos ? getHaversineDistance(userPos[0], userPos[1], shopCoords[1], shopCoords[0]) : 0;
+
+                // Step 4: Timer details
+                let timeRemainingMs = 0;
+                let isOverdue = false;
+                let lateFeeAccumulated = 0;
+                if (booking.status === 'ACTIVE' && booking.handoverVerifiedAt) {
+                  const startTime = new Date(booking.handoverVerifiedAt).getTime();
+                  const allowedDurationMs = new Date(booking.endDate).getTime() - new Date(booking.startDate).getTime();
+                  const targetEndTime = startTime + allowedDurationMs;
+                  const diff = targetEndTime - now.getTime();
+                  if (diff < 0) {
+                    isOverdue = true;
+                    timeRemainingMs = Math.abs(diff);
+                    const hoursOverdue = Math.ceil(timeRemainingMs / (1000 * 60 * 60));
+                    const hourlyRent = (booking.listingId?.dailyRent || 0) / 24;
+                    lateFeeAccumulated = Math.ceil(hoursOverdue * hourlyRent * 1.5);
+                  } else {
+                    timeRemainingMs = diff;
+                  }
+                }
+
                 return (
                   <div key={booking._id} className="bg-white rounded-2xl border border-gray-150 shadow-md p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
                     
-                    {/* Booking metadata */}
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <span className="px-2 py-0.5 bg-gray-100 text-gray-700 text-[10px] font-bold rounded uppercase">
-                            {booking.listingId?.category}
-                          </span>
-                          <h4 className="text-lg font-bold text-primary mt-1 line-clamp-1">
-                            {booking.listingId?.title || 'Rental Item'}
-                          </h4>
-                        </div>
-                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                          booking.status === 'ACTIVE' ? 'bg-green-100 text-green-700' :
-                          booking.status === 'REQUESTED' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600'
-                        }`}>
-                          {booking.status}
-                        </span>
-                      </div>
-
-                      {/* Dates */}
-                      <div className="grid grid-cols-2 gap-2 text-xs border-y border-gray-100 py-3">
-                        <div>
-                          <p className="text-gray-400">Start Date</p>
-                          <p className="font-semibold text-primary">{new Date(booking.startDate).toLocaleDateString()}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-400">End Date</p>
-                          <p className="font-semibold text-primary">{new Date(booking.endDate).toLocaleDateString()}</p>
-                        </div>
-                      </div>
-
-                      {/* Price Breakdown */}
-                      <div className="space-y-1.5 text-xs text-gray-500">
-                        <div className="flex justify-between">
-                          <span>Base Rental Fee</span>
-                          <span>₹{booking.pricing?.baseRent}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Platform & Insurance</span>
-                          <span>₹{booking.pricing?.insurancePremium + booking.pricing?.platformFee}</span>
-                        </div>
-                        <div className="flex justify-between font-bold text-gray-700">
-                          <span>Refundable Deposit</span>
-                          <span>₹{booking.pricing?.securityDeposit}</span>
-                        </div>
-                        <div className="flex justify-between font-bold text-accent border-t border-dashed border-gray-200 pt-1.5 text-sm">
-                          <span>Total Paid</span>
-                          <span>₹{booking.totals?.userTotalPaid}</span>
-                        </div>
-                      </div>
-
-                      {/* Security Verification Keys */}
-                      <div className="bg-gray-50 p-4 rounded-xl border border-gray-150 space-y-3">
-                        <h5 className="text-xs font-bold text-primary flex items-center gap-1.5">
-                          <Key className="h-4 w-4 text-accent" />
-                          Security Exchange Checkpoints
-                        </h5>
-                        <div className="grid grid-cols-2 gap-3 text-center">
-                          <div className="bg-white p-2 rounded-lg border border-gray-100">
-                            <p className="text-[10px] text-gray-400 font-semibold uppercase">Handover OTP</p>
-                            <p className="text-lg font-mono font-extrabold text-accent mt-0.5">{booking.handoverOtp}</p>
+                    {/* STEPPER PROGRESS HEADER */}
+                    <div className="lg:col-span-3 flex justify-between items-center bg-gray-50 p-4 rounded-xl border border-gray-150 mb-2 overflow-x-auto gap-4">
+                      {[
+                        { step: 1, label: 'Locate Host', desc: 'Navigate to pickup' },
+                        { step: 2, label: 'Verify Asset', desc: 'Capture live photos' },
+                        { step: 3, label: 'Handover OTP', desc: 'Verify with host' },
+                        { step: 4, label: 'Active Rental', desc: 'Timer running' },
+                        { step: 5, label: 'Completed', desc: 'Trip details' }
+                      ].map((s) => {
+                        const isCompleted = currentStep > s.step;
+                        const isActive = currentStep === s.step;
+                        return (
+                          <div key={s.step} className="flex items-center gap-2 shrink-0">
+                            <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                              isCompleted ? 'bg-green-500 text-white shadow-md shadow-green-200' :
+                              isActive ? 'bg-accent text-white shadow-md shadow-accent/20 animate-pulse' :
+                              'bg-gray-200 text-gray-400'
+                            }`}>
+                              {isCompleted ? <Check className="h-4 w-4" /> : s.step}
+                            </div>
+                            <div className="text-left">
+                              <p className={`text-xs font-bold leading-tight ${isActive ? 'text-accent font-extrabold' : isCompleted ? 'text-green-600' : 'text-gray-400'}`}>{s.label}</p>
+                              <p className="text-[9px] text-gray-400 font-semibold">{s.desc}</p>
+                            </div>
+                            {s.step < 5 && <ChevronRight className="h-4 w-4 text-gray-300 ml-1.5" />}
                           </div>
-                          <div className="bg-white p-2 rounded-lg border border-gray-100">
-                            <p className="text-[10px] text-gray-400 font-semibold uppercase">Return OTP</p>
-                            <p className="text-lg font-mono font-extrabold text-gray-600 mt-0.5">{booking.returnOtp}</p>
-                          </div>
-                        </div>
-                        <p className="text-[10px] text-gray-400">Show Handover OTP to host to authorize delivery. Show Return OTP upon returning.</p>
-                      </div>
-
+                        );
+                      })}
                     </div>
 
-                    {/* Live delivery tracking map */}
-                    <div className="lg:col-span-2 flex flex-col h-[280px] lg:h-auto min-h-[250px] relative">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-bold text-primary flex items-center gap-1.5">
-                          <Truck className="h-4 w-4 text-accent" />
-                          Hyperlocal Delivery Tracking Map
-                        </span>
-                        {isTracking ? (
-                          <span className="text-[10px] px-2 py-0.5 bg-green-50 text-green-700 font-bold border border-green-200 rounded animate-pulse">
-                            Live Stream Connected
-                          </span>
-                        ) : (
-                          <span className="text-[10px] text-gray-400 italic">Waiting for host to simulate delivery location updates...</span>
-                        )}
-                      </div>
-                      
-                      <div className="flex-1 w-full rounded-xl overflow-hidden border border-gray-200 shadow-inner">
-                        <MapContainer center={mapCenter} zoom={14} className="w-full h-full">
-                          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                          <ChangeView center={mapCenter} />
-                          {isTracking && (
-                            <Marker position={liveLocations[booking._id]} icon={hostIcon}>
-                              <Popup>
-                                <div className="text-xs font-bold">Delivery Partner Location</div>
-                              </Popup>
-                            </Marker>
-                          )}
-                          {/* Item Listing Location Pin */}
-                          {booking.listingId?.location?.coordinates && (
-                            <Marker 
-                              position={[booking.listingId.location.coordinates[1], booking.listingId.location.coordinates[0]]} 
-                              icon={userIcon}
+                    {/* STEP 1 CONTENT: Navigate to Host */}
+                    {currentStep === 1 && (
+                      <>
+                        <div className="space-y-4">
+                          <div>
+                            <span className="px-2 py-0.5 bg-gray-100 text-gray-700 text-[10px] font-bold rounded uppercase">
+                              {booking.listingId?.category}
+                            </span>
+                            <h4 className="text-lg font-bold text-primary mt-1 line-clamp-1">
+                              {booking.listingId?.title || 'Rental Item'}
+                            </h4>
+                          </div>
+
+                          <div className="bg-orange-50/50 p-4 rounded-xl border border-orange-100 space-y-2 text-xs">
+                            <p className="text-primary font-bold flex items-center gap-1.5">
+                              <MapPin className="h-4 w-4 text-accent" />
+                              Pickup Shop Location Navigation
+                            </p>
+                            <div className="space-y-1 text-gray-600 font-semibold">
+                              <p>📍 Distance: <span className="text-accent font-extrabold">{Math.round(distanceM)} meters</span></p>
+                              <p>🚶 Est. Walk Duration: <span className="text-primary font-bold">~{Math.ceil(distanceM / 80)} mins</span></p>
+                            </div>
+                            <p className="text-[10px] text-gray-400 leading-normal mt-1">Please walk to the shop coordinates shown on the navigation map. Host's live delivery partner telemetry will stream on connection.</p>
+                          </div>
+
+                          <button
+                            onClick={() => setRenterSteps(prev => ({ ...prev, [booking._id]: 2 }))}
+                            className="w-full py-2.5 bg-accent hover:bg-accent-hover text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-accent/15 flex items-center justify-center gap-1.5"
+                          >
+                            <Navigation className="h-4 w-4" />
+                            I Have Arrived at Pickup Location
+                          </button>
+                        </div>
+
+                        <div className="lg:col-span-2 flex flex-col h-[280px] lg:h-auto min-h-[250px] relative">
+                          <div className="flex-1 w-full rounded-xl overflow-hidden border border-gray-200 shadow-inner">
+                            <MapContainer center={userPos || [shopCoords[1], shopCoords[0]]} zoom={15} className="w-full h-full">
+                              <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                              {userPos && <ChangeView center={userPos} />}
+                              
+                              {/* Renter location pin */}
+                              {userPos && (
+                                <Marker position={userPos} icon={userIcon}>
+                                  <Popup>
+                                    <div className="text-xs font-bold">Your Location</div>
+                                  </Popup>
+                                </Marker>
+                              )}
+                              
+                              {/* Shop location pin */}
+                              <Marker position={[shopCoords[1], shopCoords[0]]} icon={hostIcon}>
+                                <Popup>
+                                  <div className="text-xs font-bold">Host Shop / Pickup Point</div>
+                                </Popup>
+                              </Marker>
+
+                              {/* Navigation Polyline */}
+                              {userPos && (
+                                <Polyline positions={[userPos, [shopCoords[1], shopCoords[0]]]} color="#f97316" dashArray="5, 10" weight={4} />
+                              )}
+                            </MapContainer>
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                    {/* STEP 2 CONTENT: Capture Pickup Photos */}
+                    {currentStep === 2 && (
+                      <>
+                        <div className="space-y-4">
+                          <div>
+                            <h4 className="text-base font-bold text-primary">Verify Asset Condition</h4>
+                            <p className="text-xs text-gray-500 mt-0.5">Capture live photos of the product at the shop before exchange.</p>
+                          </div>
+
+                          <div className="space-y-3">
+                            {/* Native camera capture file picker */}
+                            <input 
+                              type="file" 
+                              accept="image/*" 
+                              capture="camera" 
+                              onChange={(e) => handlePickupPhotoCapture(e, booking._id)} 
+                              className="hidden" 
+                              id={`camera-input-${booking._id}`} 
+                            />
+                            
+                            <label 
+                              htmlFor={`camera-input-${booking._id}`}
+                              className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-accent/40 rounded-xl cursor-pointer hover:bg-accent/5 transition-all text-center space-y-1.5"
                             >
-                              <Popup>
-                                <div className="text-xs font-bold">Item Shop / Location</div>
-                              </Popup>
-                            </Marker>
-                          )}
-                        </MapContainer>
-                      </div>
-                    </div>
+                              <Camera className="h-7 w-7 text-accent animate-bounce" />
+                              <span className="text-xs font-bold text-gray-700">Launch Live Camera</span>
+                              <span className="text-[9px] text-gray-400">Strictly live capture only • Gallery selection blocked</span>
+                            </label>
+
+                            {/* Previews */}
+                            <div className="space-y-1">
+                              <p className="text-[10px] font-bold text-gray-500 uppercase">Captured Condition Photos ({capturedPhotos[booking._id]?.length || 0}/4)</p>
+                              <div className="grid grid-cols-4 gap-2">
+                                {(capturedPhotos[booking._id] || []).map((img, idx) => (
+                                  <div key={idx} className="relative h-14 rounded-lg overflow-hidden border border-gray-250 bg-gray-50 group">
+                                    <img src={img} alt="Condition Preview" className="w-full h-full object-cover" />
+                                    <button
+                                      type="button"
+                                      onClick={() => removeCapturedPhoto(booking._id, idx)}
+                                      className="absolute top-0.5 right-0.5 bg-red-650 text-white rounded-full p-0.5 hover:bg-red-750 transition-all"
+                                    >
+                                      <X className="h-2.5 w-2.5" />
+                                    </button>
+                                  </div>
+                                ))}
+                                {photoUploading[booking._id] && (
+                                  <div className="h-14 rounded-lg border border-dashed border-accent flex items-center justify-center bg-accent/5">
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-accent"></div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={() => handleUploadAndLockPhotos(booking._id)}
+                            disabled={!capturedPhotos[booking._id] || capturedPhotos[booking._id].length < 2}
+                            className={`w-full py-2.5 text-xs font-bold rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 ${
+                              capturedPhotos[booking._id]?.length >= 2
+                                ? 'bg-accent hover:bg-accent-hover text-white shadow-accent/15'
+                                : 'bg-gray-100 text-gray-450 border border-gray-200 cursor-not-allowed'
+                            }`}
+                          >
+                            <Upload className="h-4 w-4" />
+                            Upload & Lock Condition Photos
+                          </button>
+                          <p className="text-[9px] text-gray-400 text-center">Requires at least 2 live condition photos before lock confirmation.</p>
+                        </div>
+
+                        <div className="lg:col-span-2 bg-gray-50 rounded-xl border border-dashed border-gray-200 p-6 flex items-center justify-center text-center">
+                          <div className="max-w-sm space-y-2">
+                            <AlertTriangle className="h-8 w-8 text-amber-500 mx-auto" />
+                            <p className="text-xs font-bold text-gray-700">Safety Checkpoint Guidelines</p>
+                            <p className="text-[10px] text-gray-500 leading-relaxed">
+                              Take clear snapshots of the product from multiple angles (front, back, screen, serial numbers) to verify its initial physical status. This photo record helps resolve deposit and insurance claims in case of disputes.
+                            </p>
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                    {/* STEP 3 CONTENT: Handover OTP Exchange */}
+                    {currentStep === 3 && (
+                      <>
+                        <div className="space-y-4">
+                          <div>
+                            <h4 className="text-base font-bold text-primary">Verify Physical Handover</h4>
+                            <p className="text-xs text-gray-500 mt-0.5">Please share the Handover OTP with the host to initiate the trip.</p>
+                          </div>
+
+                          <div className="bg-gray-50 p-6 rounded-xl border border-gray-150 text-center space-y-3">
+                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Handover OTP Code</p>
+                            <p className="text-3xl font-mono font-extrabold text-accent tracking-widest">{booking.handoverOtp}</p>
+                            <p className="text-[10px] text-gray-400 leading-normal">Host will enter this OTP on their terminal. Do not share this OTP until you have physically inspected and verified the product matches description.</p>
+                          </div>
+
+                          <div className="flex items-center justify-center gap-2 text-xs font-semibold text-accent py-2">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-accent"></div>
+                            <span>Waiting for host verification...</span>
+                          </div>
+                        </div>
+
+                        <div className="lg:col-span-2 bg-gray-50 rounded-xl border border-gray-200 p-6 flex flex-col justify-center">
+                          <h5 className="text-xs font-bold text-gray-700 mb-2">Logged Condition Checkpoint Photos</h5>
+                          <div className="grid grid-cols-4 gap-2">
+                            {booking.pickupPhotos?.map((img, index) => (
+                              <div key={index} className="h-16 rounded-lg overflow-hidden border border-gray-200 bg-white">
+                                <img src={img} alt="Locked Condition" className="w-full h-full object-cover" />
+                              </div>
+                            ))}
+                          </div>
+                          <p className="text-[10px] text-green-600 font-semibold mt-3 flex items-center gap-1">
+                            <CheckCircle className="h-3.5 w-3.5" /> Condition photos are safely locked in database.
+                          </p>
+                        </div>
+                      </>
+                    )}
+
+                    {/* STEP 4 CONTENT: Active Rental Countdown Timer */}
+                    {currentStep === 4 && (
+                      <>
+                        <div className="space-y-4">
+                          <div>
+                            <span className="px-2 py-0.5 bg-green-15 text-green-700 text-[10px] font-bold rounded uppercase">
+                              Trip Active
+                            </span>
+                            <h4 className="text-lg font-bold text-primary mt-1 line-clamp-1">
+                              {booking.listingId?.title}
+                            </h4>
+                          </div>
+
+                          <div className={`p-4 rounded-xl border text-center space-y-1.5 ${
+                            isOverdue
+                              ? 'bg-red-50 border-red-200 text-red-700 animate-pulse'
+                              : 'bg-green-50/50 border-green-200 text-green-800'
+                          }`}>
+                            <p className="text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1">
+                              <Clock className="h-3.5 w-3.5" />
+                              {isOverdue ? 'Rental Time Exceeded (Overdue)' : 'Time Remaining'}
+                            </p>
+                            <p className="text-2xl font-mono font-extrabold tracking-wider">
+                              {isOverdue ? '-' : ''}{formatDuration(timeRemainingMs)}
+                            </p>
+                            {isOverdue && (
+                              <div className="pt-2 border-t border-red-250 border-dashed space-y-1">
+                                <p className="text-xs font-extrabold text-red-650">Late Charge Accumulated: ₹{lateFeeAccumulated}</p>
+                                <p className="text-[9px] text-red-500 font-semibold leading-normal">Additional fees are charged at 1.5x penalty hourly rental rate per exceeded hour.</p>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="bg-gray-50 p-4 rounded-xl border border-gray-150 text-center space-y-1.5">
+                            <p className="text-[10px] text-gray-400 font-bold uppercase">Return OTP Code</p>
+                            <p className="text-2xl font-mono font-extrabold text-gray-700 tracking-widest">{booking.returnOtp}</p>
+                            <p className="text-[9px] text-gray-450">Show this Return OTP code to the host when returning the asset to stop the rental timer.</p>
+                          </div>
+                        </div>
+
+                        <div className="lg:col-span-2 flex flex-col h-[280px] lg:h-auto min-h-[250px] relative">
+                          <div className="flex-1 w-full rounded-xl overflow-hidden border border-gray-200 shadow-inner">
+                            <MapContainer center={[shopCoords[1], shopCoords[0]]} zoom={14} className="w-full h-full">
+                              <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                              <Marker position={[shopCoords[1], shopCoords[0]]} icon={hostIcon}>
+                                <Popup>
+                                  <div className="text-xs font-bold">Return Shop Location</div>
+                                </Popup>
+                              </Marker>
+                            </MapContainer>
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                    {/* STEP 5 CONTENT: Trip Completed */}
+                    {currentStep === 5 && (
+                      <>
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-2">
+                            <div className="bg-green-100 text-green-700 p-1.5 rounded-full">
+                              <CheckCircle className="h-5 w-5" />
+                            </div>
+                            <div>
+                              <h4 className="text-base font-bold text-primary">Rental Successfully Completed</h4>
+                              <p className="text-xs text-gray-500">The product has hopped back to the Host.</p>
+                            </div>
+                          </div>
+
+                          <div className="bg-gray-50 p-4 rounded-xl border border-gray-150 text-xs space-y-2.5">
+                            <p className="font-bold text-primary uppercase text-[10px]">Rental Summary Receipt</p>
+                            <div className="space-y-1.5 text-gray-600 font-semibold">
+                              <div className="flex justify-between">
+                                <span>Base Fee Paid</span>
+                                <span>₹{booking.totals?.userTotalPaid}</span>
+                              </div>
+                              <div className="flex justify-between text-red-650 font-bold">
+                                <span>Late Return Penalty</span>
+                                <span>₹{booking.lateFeeCharge || 0}</span>
+                              </div>
+                              <div className="flex justify-between border-t border-dashed border-gray-200 pt-2 text-accent font-extrabold text-sm">
+                                <span>Total Cost Settle</span>
+                                <span>₹{booking.totals?.userTotalPaid + (booking.lateFeeCharge || 0)}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="text-xs text-gray-500 font-medium space-y-1 border-t border-gray-100 pt-3">
+                            <p>🏁 Handover: {booking.handoverVerifiedAt ? new Date(booking.handoverVerifiedAt).toLocaleString() : 'N/A'}</p>
+                            <p>🏁 Returned: {booking.actualReturnDate ? new Date(booking.actualReturnDate).toLocaleString() : 'N/A'}</p>
+                          </div>
+                        </div>
+
+                        <div className="lg:col-span-2 space-y-3">
+                          <h5 className="text-xs font-bold text-gray-700">Archived Verification Logs</h5>
+                          <div className="grid grid-cols-4 gap-2">
+                            {booking.pickupPhotos?.map((img, index) => (
+                              <div key={index} className="h-16 rounded-lg overflow-hidden border border-gray-200">
+                                <img src={img} alt="Locked Condition Log" className="w-full h-full object-cover hover:scale-105 transition-transform cursor-pointer" />
+                              </div>
+                            ))}
+                          </div>
+                          <div className="p-3 bg-green-50 text-green-700 text-[10px] font-bold border border-green-200 rounded-lg">
+                            Trip completed without disputes. Deposit will refund automatically following listing inspections. Thank you for using AssetHop!
+                          </div>
+                        </div>
+                      </>
+                    )}
 
                   </div>
                 );
@@ -696,40 +1121,144 @@ export default function DashboardPage() {
 
                           {/* Handover OTP Verification Form */}
                           {booking.status === 'REQUESTED' && (
-                            <div className="bg-amber-50/50 p-4 rounded-xl border border-amber-100 space-y-3">
-                              <h5 className="text-xs font-bold text-amber-800 flex items-center gap-1.5">
-                                <Key className="h-4 w-4 text-accent" />
-                                Handover OTP Verification
-                              </h5>
-                              <div className="flex gap-2">
-                                <input
-                                  type="text"
-                                  maxLength="6"
-                                  placeholder="Enter 6-digit OTP"
-                                  value={handoverOtp[booking._id] || ''}
-                                  onChange={(e) => setHandoverOtp({
-                                    ...handoverOtp,
-                                    [booking._id]: e.target.value
-                                  })}
-                                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm text-center font-mono focus:outline-none focus:ring-1 focus:ring-accent"
-                                />
-                                <button
-                                  onClick={() => handleVerifyOtp(booking._id)}
-                                  className="px-4 py-2 bg-accent hover:bg-accent-hover text-white text-xs font-bold rounded-lg transition-all"
-                                >
-                                  Verify
-                                </button>
-                              </div>
+                            <div className="space-y-3">
+                              {/* Check if Renter has uploaded photos */}
+                              {!booking.pickupPhotos || booking.pickupPhotos.length === 0 ? (
+                                <div className="bg-amber-50 p-4 rounded-xl border border-amber-250 space-y-2 text-xs">
+                                  <div className="flex items-center gap-1.5 text-amber-800 font-bold">
+                                    <AlertTriangle className="h-4 w-4 text-amber-600 animate-bounce" />
+                                    <span>Waiting for Renter Photo Upload</span>
+                                  </div>
+                                  <p className="text-[10px] text-amber-600 leading-normal font-semibold">The renter must capture and upload at least 2 live photos of the product condition at your shop before you can verify the Handover OTP.</p>
+                                  
+                                  {/* Disabled input field */}
+                                  <div className="flex gap-2 opacity-50 cursor-not-allowed">
+                                    <input
+                                      type="text"
+                                      disabled
+                                      placeholder="OTP Entry Locked"
+                                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm text-center font-mono focus:outline-none"
+                                    />
+                                    <button
+                                      disabled
+                                      className="px-4 py-2 bg-gray-300 text-gray-500 text-xs font-bold rounded-lg"
+                                    >
+                                      Verify
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="bg-green-50/50 p-4 rounded-xl border border-green-200 space-y-3">
+                                  <h5 className="text-xs font-bold text-green-800 flex items-center gap-1.5">
+                                    <Key className="h-4 w-4 text-green-600 animate-pulse" />
+                                    Handover OTP Verification
+                                  </h5>
+                                  
+                                  {/* Photo Gallery for Host Inspection */}
+                                  <div className="space-y-1">
+                                    <p className="text-[9px] font-bold text-gray-550 uppercase">Renter Uploaded Pickup Photos:</p>
+                                    <div className="grid grid-cols-4 gap-1">
+                                      {booking.pickupPhotos.map((img, index) => (
+                                        <div key={index} className="h-10 rounded overflow-hidden border border-gray-300">
+                                          <img src={img} alt="Inspect" className="w-full h-full object-cover" />
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+
+                                  <div className="flex gap-2">
+                                    <input
+                                      type="text"
+                                      maxLength="6"
+                                      placeholder="Enter Handover OTP"
+                                      value={handoverOtp[booking._id] || ''}
+                                      onChange={(e) => setHandoverOtp({
+                                        ...handoverOtp,
+                                        [booking._id]: e.target.value
+                                      })}
+                                      className="flex-1 px-3 py-2 border border-gray-350 rounded-lg text-sm text-center font-mono focus:outline-none focus:ring-1 focus:ring-accent"
+                                    />
+                                    <button
+                                      onClick={() => handleVerifyOtp(booking._id)}
+                                      className="px-4 py-2 bg-accent hover:bg-accent-hover text-white text-xs font-bold rounded-lg transition-all"
+                                    >
+                                      Verify
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           )}
 
-                          {/* Active trip tracking toggle */}
+                          {/* Active trip tracking & Return OTP input */}
                           {booking.status === 'ACTIVE' && (
-                            <div className="space-y-2">
-                              <div className="bg-green-50 p-3 rounded-lg border border-green-200 text-xs text-green-800 font-semibold flex items-center gap-2">
-                                <CheckCircle className="h-4 w-4 text-green-600" />
-                                Handover verified. Trip is active!
+                            <div className="space-y-4">
+                              {/* Host Side Timer */}
+                              {(() => {
+                                let timeRemainingMs = 0;
+                                let isOverdue = false;
+                                let lateFeeAccumulated = 0;
+                                if (booking.handoverVerifiedAt) {
+                                  const startTime = new Date(booking.handoverVerifiedAt).getTime();
+                                  const allowedDurationMs = new Date(booking.endDate).getTime() - new Date(booking.startDate).getTime();
+                                  const targetEndTime = startTime + allowedDurationMs;
+                                  const diff = targetEndTime - now.getTime();
+                                  if (diff < 0) {
+                                    isOverdue = true;
+                                    timeRemainingMs = Math.abs(diff);
+                                    const hoursOverdue = Math.ceil(timeRemainingMs / (1000 * 60 * 60));
+                                    const hourlyRent = (booking.listingId?.dailyRent || 0) / 24;
+                                    lateFeeAccumulated = Math.ceil(hoursOverdue * hourlyRent * 1.5);
+                                  } else {
+                                    timeRemainingMs = diff;
+                                  }
+                                }
+
+                                return (
+                                  <div className={`p-3 rounded-lg border text-center space-y-1 ${
+                                    isOverdue ? 'bg-red-50 border-red-200 text-red-800' : 'bg-green-50 border-green-205 text-green-900'
+                                  }`}>
+                                    <p className="text-[9px] font-bold uppercase tracking-wider flex items-center justify-center gap-1">
+                                      <Clock className="h-3.5 w-3.5" />
+                                      {isOverdue ? 'Rental Overdue' : 'Time Remaining'}
+                                    </p>
+                                    <p className="text-xl font-mono font-extrabold">
+                                      {isOverdue ? '-' : ''}{formatDuration(timeRemainingMs)}
+                                    </p>
+                                    {isOverdue && (
+                                      <p className="text-[10px] font-extrabold text-red-650">Renter Late Charge: ₹{lateFeeAccumulated}</p>
+                                    )}
+                                  </div>
+                                );
+                              })()}
+
+                              {/* Return OTP Exchange Form */}
+                              <div className="bg-gray-55 p-4 rounded-xl border border-gray-200 space-y-3">
+                                <h5 className="text-xs font-bold text-gray-700 flex items-center gap-1.5">
+                                  <Key className="h-4 w-4 text-accent animate-pulse" />
+                                  Confirm Rental Return OTP
+                                </h5>
+                                <div className="flex gap-2">
+                                  <input
+                                    type="text"
+                                    maxLength="6"
+                                    placeholder="Enter Return OTP"
+                                    value={returnOtpFields[booking._id] || ''}
+                                    onChange={(e) => setReturnOtpFields({
+                                      ...returnOtpFields,
+                                      [booking._id]: e.target.value
+                                    })}
+                                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm text-center font-mono focus:outline-none focus:ring-1 focus:ring-accent"
+                                  />
+                                  <button
+                                    onClick={() => handleVerifyReturnOtp(booking._id)}
+                                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded-lg transition-all"
+                                  >
+                                    Confirm
+                                  </button>
+                                </div>
                               </div>
+
                               <button
                                 onClick={() => {
                                   if (isSimulating) {
@@ -745,7 +1274,7 @@ export default function DashboardPage() {
                                     }
                                   }
                                 }}
-                                className={`w-full py-2.5 rounded-lg text-xs font-bold transition-all border ${
+                                className={`w-full py-2 rounded-lg text-xs font-bold transition-all border ${
                                   isSimulating
                                     ? 'bg-red-50 text-accent border-red-200 hover:bg-red-100'
                                     : 'bg-accent text-white border-transparent hover:bg-accent-hover shadow-sm shadow-accent/10'
@@ -753,6 +1282,27 @@ export default function DashboardPage() {
                               >
                                 {isSimulating ? 'Stop Simulator' : 'Open Delivery Simulator Map'}
                               </button>
+                            </div>
+                          )}
+
+                          {/* COMPLETED Trip summary */}
+                          {booking.status === 'COMPLETED' && (
+                            <div className="bg-green-50 p-4 rounded-xl border border-green-200 space-y-2 text-xs font-semibold">
+                              <p className="font-extrabold text-green-800 uppercase text-[9px] tracking-wider">Settled Trip Receipt</p>
+                              <div className="space-y-1 text-gray-650">
+                                <div className="flex justify-between">
+                                  <span>Base Earning</span>
+                                  <span>₹{booking.totals?.hostEarned}</span>
+                                </div>
+                                <div className="flex justify-between text-red-650 font-bold">
+                                  <span>Late Penalty Earnings</span>
+                                  <span>₹{booking.lateFeeCharge || 0}</span>
+                                </div>
+                                <div className="flex justify-between border-t border-green-200 pt-1.5 font-extrabold text-green-900">
+                                  <span>Total Settlement</span>
+                                  <span>₹{booking.totals?.hostEarned + (booking.lateFeeCharge || 0)}</span>
+                                </div>
+                              </div>
                             </div>
                           )}
 

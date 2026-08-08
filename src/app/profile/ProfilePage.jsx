@@ -3,9 +3,11 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../core/hooks/useAuth';
 import { api } from '../../core/api/client';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 import { 
   User, Mail, Phone, ShieldCheck, ShieldAlert, Sparkles, 
-  Upload, FileText, CheckCircle, AlertTriangle, Eye, ArrowLeft, Loader2, Camera
+  Upload, FileText, CheckCircle, AlertTriangle, Eye, ArrowLeft, Loader2, Camera,
+  CreditCard
 } from 'lucide-react';
 
 export default function ProfilePage() {
@@ -51,6 +53,15 @@ export default function ProfilePage() {
   // Avatar upload state
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
+  // Host Payout details state
+  const [payoutType, setPayoutType] = useState('bank');
+  const [accountHolderName, setAccountHolderName] = useState('');
+  const [accountNumber, setAccountNumber] = useState('');
+  const [ifscCode, setIfscCode] = useState('');
+  const [upiId, setUpiId] = useState('');
+  const [isSavingPayout, setIsSavingPayout] = useState(false);
+  const [isEditingPayout, setIsEditingPayout] = useState(false);
+
   // Load user data into form fields on component mount
   useEffect(() => {
     if (user) {
@@ -66,6 +77,19 @@ export default function ProfilePage() {
         setOtherDocType(user.kycDetails.otherDocType || '');
         setOtherDocNumber(user.kycDetails.otherDocNumber || '');
         setOtherDocPreview(user.kycDetails.otherDocFile || '');
+      }
+
+      // Pre-fill Payout Details
+      if (user.payoutDetails) {
+        setAccountHolderName(user.payoutDetails.accountHolderName || '');
+        setAccountNumber(user.payoutDetails.accountNumber || '');
+        setIfscCode(user.payoutDetails.ifscCode || '');
+        setUpiId(user.payoutDetails.upiId || '');
+        if (user.payoutDetails.upiId && !user.payoutDetails.accountNumber) {
+          setPayoutType('upi');
+        } else {
+          setPayoutType('bank');
+        }
       }
     }
   }, [user]);
@@ -255,6 +279,69 @@ export default function ProfilePage() {
       return `XXXX-XXXX-${visible}`;
     }
     return `${masked}${visible}`;
+  };
+
+  const maskUpiId = (upi) => {
+    if (!upi) return '';
+    const parts = upi.split('@');
+    if (parts.length !== 2) return upi;
+    const [userPart, bankPart] = parts;
+    if (userPart.length <= 3) {
+      return `***@${bankPart}`;
+    }
+    return `${userPart.slice(0, 3)}***@${bankPart}`;
+  };
+
+  const handleSavePayout = async (e) => {
+    e.preventDefault();
+    setIsSavingPayout(true);
+    
+    if (payoutType === 'bank') {
+      if (!accountHolderName.trim() || !accountNumber.trim() || !ifscCode.trim()) {
+        toast.error('All bank account details are required.');
+        setIsSavingPayout(false);
+        return;
+      }
+      const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+      if (!ifscRegex.test(ifscCode.trim().toUpperCase())) {
+        toast.error('Invalid IFSC Code format (e.g. SBIN0001234).');
+        setIsSavingPayout(false);
+        return;
+      }
+    } else {
+      if (!upiId.trim()) {
+        toast.error('UPI ID is required.');
+        setIsSavingPayout(false);
+        return;
+      }
+      const upiRegex = /^[a-zA-Z0-9.-]+@[a-zA-Z0-9.-]+$/;
+      if (!upiRegex.test(upiId.trim())) {
+        toast.error('Invalid UPI ID format (e.g. name@okhdfcbank).');
+        setIsSavingPayout(false);
+        return;
+      }
+    }
+
+    try {
+      const payload = {
+        type: payoutType,
+        accountHolderName: payoutType === 'bank' ? accountHolderName : '',
+        accountNumber: payoutType === 'bank' ? accountNumber : '',
+        ifscCode: payoutType === 'bank' ? ifscCode : '',
+        upiId: payoutType === 'upi' ? upiId : ''
+      };
+
+      const res = await api.put('/host/payout-settings', payload);
+      if (res?.status === 'success') {
+        updateUser(res.data);
+        toast.success('🎉 Payout details configured successfully!');
+        setIsEditingPayout(false);
+      }
+    } catch (err) {
+      toast.error(err.message || 'Failed to save payout settings.');
+    } finally {
+      setIsSavingPayout(false);
+    }
   };
 
   if (!user) return null;
@@ -768,6 +855,192 @@ export default function ProfilePage() {
             )}
 
           </div>
+
+          {/* Section 3: Host Payout Details Settings */}
+          {user.role === 'HOST' && (
+            <div className="bg-white rounded-2xl border border-gray-150 shadow-md p-6 relative overflow-hidden">
+              <div className="flex items-center gap-3 border-b border-gray-100 pb-4 mb-6">
+                <div className="p-2.5 bg-accent/10 rounded-xl text-accent">
+                  <CreditCard className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-primary">Host Payout Settings</h3>
+                  <p className="text-xs text-gray-500 mt-0.5">Configure your receiving bank account or UPI ID for rental payouts.</p>
+                </div>
+              </div>
+
+              {user.payoutDetails?.isPayoutConfigured && !isEditingPayout ? (
+                <div className="space-y-4">
+                  <div className="bg-green-50/50 p-4 border border-green-200 rounded-2xl flex gap-3 text-green-800 text-xs font-semibold leading-relaxed text-left">
+                    <CheckCircle className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-extrabold uppercase">Payout Account Active</p>
+                      <p className="mt-1 text-gray-500 font-medium">
+                        Your payout details have been validated and linked. Rental settlements will be auto-routed to this account.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 border border-gray-150 p-6 rounded-2xl space-y-4 text-left">
+                    <div className="flex justify-between items-center border-b border-gray-255 pb-3">
+                      <h4 className="text-xs font-bold text-gray-800 uppercase tracking-wide">Linked Destination</h4>
+                      <span className="text-[10px] px-2 py-0.5 bg-green-600 text-white font-extrabold rounded-full uppercase">Verified</span>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-medium">
+                      {user.payoutDetails.accountNumber ? (
+                        <>
+                          <div className="bg-white p-3 rounded-xl border border-gray-100">
+                            <p className="text-[10px] text-gray-400 font-bold uppercase">Account Holder</p>
+                            <p className="text-gray-700 font-semibold mt-0.5">{user.payoutDetails.accountHolderName}</p>
+                          </div>
+                          <div className="bg-white p-3 rounded-xl border border-gray-100">
+                            <p className="text-[10px] text-gray-400 font-bold uppercase">Bank Account Number</p>
+                            <p className="text-gray-700 font-semibold mt-0.5">{maskNumber(user.payoutDetails.accountNumber, 4)}</p>
+                          </div>
+                          <div className="bg-white p-3 rounded-xl border border-gray-100 md:col-span-2">
+                            <p className="text-[10px] text-gray-400 font-bold uppercase">IFSC Code</p>
+                            <p className="text-gray-700 font-semibold mt-0.5">{user.payoutDetails.ifscCode}</p>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="bg-white p-3 rounded-xl border border-gray-100 md:col-span-2">
+                          <p className="text-[10px] text-gray-400 font-bold uppercase">UPI ID</p>
+                          <p className="text-gray-700 font-semibold mt-0.5">{maskUpiId(user.payoutDetails.upiId)}</p>
+                        </div>
+                      )}
+
+                      {user.payoutDetails.razorpayAccountId && (
+                        <div className="bg-white p-3 rounded-xl border border-gray-100 md:col-span-2 flex items-center justify-between">
+                          <div>
+                            <p className="text-[10px] text-gray-400 font-bold uppercase">Razorpay Route Linked Account</p>
+                            <p className="text-[11px] font-mono text-gray-500 mt-0.5">Automatic routing setup complete</p>
+                          </div>
+                          <span className="text-xs font-mono font-extrabold text-accent bg-accent/10 px-2.5 py-1 rounded-lg">
+                            {user.payoutDetails.razorpayAccountId}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end pt-2">
+                    <button
+                      onClick={() => setIsEditingPayout(true)}
+                      className="px-4 py-2 border border-gray-250 hover:bg-gray-55 text-gray-700 text-xs font-bold rounded-xl transition-all cursor-pointer"
+                    >
+                      Update Payout Settings
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <form onSubmit={handleSavePayout} className="space-y-6 text-left">
+                  {/* Selector tab buttons */}
+                  <div className="flex p-1 bg-gray-100 rounded-xl max-w-xs">
+                    <button
+                      type="button"
+                      onClick={() => setPayoutType('bank')}
+                      className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+                        payoutType === 'bank'
+                          ? 'bg-white text-primary shadow-sm'
+                          : 'text-gray-500 hover:text-gray-900'
+                      }`}
+                    >
+                      Bank Account
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPayoutType('upi')}
+                      className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+                        payoutType === 'upi'
+                          ? 'bg-white text-primary shadow-sm'
+                          : 'text-gray-500 hover:text-gray-900'
+                      }`}
+                    >
+                      UPI ID
+                    </button>
+                  </div>
+
+                  {payoutType === 'bank' ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-semibold text-gray-500 mb-1 uppercase">Account Holder Name</label>
+                        <input
+                          type="text"
+                          required
+                          value={accountHolderName}
+                          onChange={(e) => setAccountHolderName(e.target.value)}
+                          placeholder="e.g. John Doe"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-accent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 mb-1 uppercase">Bank Account Number</label>
+                        <input
+                          type="text"
+                          required
+                          value={accountNumber}
+                          onChange={(e) => setAccountNumber(e.target.value)}
+                          placeholder="Enter Account Number"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-accent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 mb-1 uppercase">IFSC Code</label>
+                        <input
+                          type="text"
+                          required
+                          value={ifscCode}
+                          onChange={(e) => setIfscCode(e.target.value.toUpperCase())}
+                          placeholder="e.g. SBIN0001234"
+                          maxLength={11}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-accent"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1 uppercase">UPI ID</label>
+                      <input
+                        type="text"
+                        required
+                        value={upiId}
+                        onChange={(e) => setUpiId(e.target.value)}
+                        placeholder="e.g. john@okaxis"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-accent"
+                      />
+                    </div>
+                  )}
+
+                  <div className="flex justify-end gap-3 border-t border-gray-100 pt-4">
+                    {user.payoutDetails?.isPayoutConfigured && (
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingPayout(false)}
+                        className="px-5 py-2.5 border border-gray-250 hover:bg-gray-50 text-gray-700 text-xs font-bold rounded-xl transition-all cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                    <button
+                      type="submit"
+                      disabled={isSavingPayout}
+                      className="px-6 py-2.5 bg-accent hover:bg-accent-hover text-white text-xs font-bold rounded-xl shadow-md shadow-accent/15 flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                    >
+                      {isSavingPayout ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Saving details...
+                        </>
+                      ) : (
+                        'Save Payout Settings'
+                      )}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          )}
 
         </div>
 

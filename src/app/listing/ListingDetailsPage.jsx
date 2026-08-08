@@ -15,10 +15,26 @@ export default function ListingDetailsPage() {
   const [error, setError] = useState('');
   const [bookingLoading, setBookingLoading] = useState(false);
 
-  // Date selections
+  // Date & Time selections
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [pickupTime, setPickupTime] = useState('10:00'); // default pickup time (e.g. 10:00 AM)
   const [durationDays, setDurationDays] = useState(1);
+
+  const formatTimeToShow = (timeStr) => {
+    if (!timeStr) return '';
+    const [hour, min] = timeStr.split(':');
+    const h = parseInt(hour, 10);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const displayHour = h % 12 || 12;
+    return `${displayHour}:${min} ${ampm}`;
+  };
+
+  const formatDateToShow = (dateStr) => {
+    if (!dateStr) return '';
+    const [year, month, day] = dateStr.split('-');
+    return `${day}/${month}/${year}`;
+  };
 
   // Set default dates: tomorrow and day after tomorrow
   useEffect(() => {
@@ -127,11 +143,15 @@ export default function ListingDetailsPage() {
     };
 
     try {
+      // Combine selected date with selected pickup time
+      const startDateTime = new Date(`${startDate}T${pickupTime || '10:00'}:00`).toISOString();
+      const endDateTime = new Date(`${endDate}T${pickupTime || '10:00'}:00`).toISOString();
+
       // 1. Create booking request on backend
       const bookingRes = await api.post('/bookings/request', {
         listingId: item._id,
-        startDate,
-        endDate
+        startDate: startDateTime,
+        endDate: endDateTime
       });
 
       if (bookingRes?.status !== 'success' || !bookingRes.data) {
@@ -154,7 +174,7 @@ export default function ListingDetailsPage() {
         amount: amount,
         currency: currency,
         name: "AssetHop Rentals",
-        description: `Rent ${item.title} for ${durationDays} days`,
+        description: `Rent ${item.title} for ${durationDays * 24} Hours (${durationDays} Days)`,
         order_id: razorpayOrderId,
         handler: async function (response) {
           try {
@@ -291,7 +311,7 @@ export default function ListingDetailsPage() {
               </div>
             </div>
 
-            {/* Date Pickers */}
+            {/* Date & Time Pickers */}
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -318,6 +338,22 @@ export default function ListingDetailsPage() {
                     />
                   </div>
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">PICKUP TIME (START & END TIME)</label>
+                <input
+                  type="time"
+                  value={pickupTime}
+                  onChange={(e) => setPickupTime(e.target.value)}
+                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-medium focus:ring-1 focus:ring-accent focus:border-accent"
+                />
+              </div>
+
+              <div className="bg-orange-50/40 p-3 rounded-lg border border-orange-100/50 text-[11px] text-gray-600 font-semibold space-y-1">
+                <p className="flex items-center gap-1"><span className="text-gray-400">🏁 Start:</span> <span className="text-primary font-bold">{formatDateToShow(startDate)} at {formatTimeToShow(pickupTime)}</span></p>
+                <p className="flex items-center gap-1"><span className="text-gray-400">🏁 End:</span> <span className="text-primary font-bold">{formatDateToShow(endDate)} at {formatTimeToShow(pickupTime)}</span></p>
+                <p className="text-[10px] text-accent font-extrabold uppercase mt-1">Total Duration: {durationDays * 24} Hours ({durationDays} Days)</p>
               </div>
             </div>
 
