@@ -5,7 +5,7 @@ import { useAuth } from '../../core/hooks/useAuth';
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
 import { useNavigate } from 'react-router-dom';
 import { Search, Compass, ShieldAlert, Laptop, Car, Shirt } from 'lucide-react';
-import ListingCard from '../../modules/listings/components/ListingCard';
+import ListingCard from '../../components/ListingCard';
 import L from 'leaflet';
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';

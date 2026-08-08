@@ -1,6 +1,6 @@
-// src/modules/listings/components/ListingCard.jsx
+// src/components/ListingCard.jsx
 import React from 'react';
-import { useAuth } from '../../../core/hooks/useAuth';
+import { useAuth } from '../core/hooks/useAuth';
 
 export default function ListingCard({ item, onClick }) {
   const { cibil } = useAuth();

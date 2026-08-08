@@ -100,28 +100,37 @@ export default function ListingDetailsPage() {
     );
   }
 
-  // --- Dynamic Deposit & Pricing Engine Calculations (matches backend) ---
+  // --- Dynamic Enterprise Pricing & GST Engine (matches backend) ---
+  const baseRentalFee = Math.round(item.dailyRent * durationDays);
+
+  // Renter Side Charges: 5% fee with min ₹5 cap, plus 18% GST
+  const userPlatformFee = Math.max(Math.round(baseRentalFee * 0.05), 5);
+  const userGstFee = Math.round(userPlatformFee * 0.18);
+  const totalUserPlatformServiceCharge = userPlatformFee + userGstFee;
+
+  // Security Deposit Waiver (CIBIL Logic)
   const CATEGORY_RULES = {
-    ELECTRONICS: { depositPercentage: 0.08, maxDepositCap: 8000, baseDailyPremium: 100 },
-    VEHICLES: { depositPercentage: 0.05, maxDepositCap: 5000, baseDailyPremium: 250 },
-    LIFESTYLE: { depositPercentage: 0.05, maxDepositCap: 1500, baseDailyPremium: 30 },
-    DEFAULT: { depositPercentage: 0.06, maxDepositCap: 3000, baseDailyPremium: 50 }
+    ELECTRONICS: { depositPercentage: 0.08, maxDepositCap: 8000 },
+    VEHICLES: { depositPercentage: 0.05, maxDepositCap: 5000 },
+    LIFESTYLE: { depositPercentage: 0.05, maxDepositCap: 1500 },
+    DEFAULT: { depositPercentage: 0.06, maxDepositCap: 3000 }
   };
 
   const rule = CATEGORY_RULES[item.category.toUpperCase()] || CATEGORY_RULES.DEFAULT;
-  const totalRent = item.dailyRent * durationDays;
-  
-  let rawDeposit = item.mrp * rule.depositPercentage;
-  if (rawDeposit > rule.maxDepositCap) {
-    rawDeposit = rule.maxDepositCap;
+  let baseDeposit = item.mrp * rule.depositPercentage;
+  if (baseDeposit > rule.maxDepositCap) {
+    baseDeposit = rule.maxDepositCap;
   }
-  
-  // CIBIL waiver check (40% discount)
-  const isCibilWaiverEligible = cibil >= 750;
-  const finalDeposit = Math.round(isCibilWaiverEligible ? rawDeposit * 0.60 : rawDeposit);
-  const totalInsurance = rule.baseDailyPremium * durationDays;
-  const platformFee = 50;
-  const totalPayableNow = totalRent + totalInsurance + platformFee + finalDeposit;
+
+  let waiverPercentage = 0;
+  if (cibil >= 750) {
+    waiverPercentage = 40;
+  } else if (cibil >= 650) {
+    waiverPercentage = 20;
+  }
+
+  const refundableDeposit = Math.round(baseDeposit * (1 - waiverPercentage / 100));
+  const totalPayableNow = baseRentalFee + totalUserPlatformServiceCharge + refundableDeposit;
 
   // Handle Pay and Rent action
   const handleRentNow = async () => {
@@ -360,45 +369,43 @@ export default function ListingDetailsPage() {
             {/* Price Calculations */}
             <div className="space-y-3 mt-6 pt-4 border-t border-gray-100 text-sm">
               <div className="flex justify-between text-gray-600">
-                <span>Rent (₹{item.dailyRent} × {durationDays} days)</span>
-                <span className="font-semibold text-primary">₹{totalRent}</span>
+                <span>Base Rent</span>
+                <span className="font-semibold text-primary">₹{baseRentalFee}</span>
               </div>
               
               <div className="flex justify-between text-gray-600">
-                <span>Insurance Premium</span>
-                <span className="font-semibold text-primary">₹{totalInsurance}</span>
-              </div>
-              
-              <div className="flex justify-between text-gray-600">
-                <span>AssetHop Platform Fee</span>
-                <span className="font-semibold text-primary">₹{platformFee}</span>
+                <div className="space-y-0.5">
+                  <span className="block">Platform & Service Fee</span>
+                  <span className="block text-[10px] text-gray-400 font-medium">(includes 18% GST)</span>
+                </div>
+                <span className="font-semibold text-primary">₹{totalUserPlatformServiceCharge}</span>
               </div>
 
               {/* Security Deposit Details with CIBIL Highlight */}
               <div className="bg-gray-50 p-3 rounded-lg border border-gray-100 space-y-1 mt-2">
                 <div className="flex justify-between text-gray-600 font-medium">
-                  <span className="flex items-center gap-1.5 text-xs text-gray-700">
+                  <span className="flex items-center gap-1.5 text-xs text-gray-750">
                     <Shield className="h-4 w-4 text-accent" />
-                    Security Deposit ({rule.depositPercentage * 100}%)
+                    Security Deposit (Refundable)
                   </span>
-                  <span className={`text-xs ${isCibilWaiverEligible ? 'line-through text-gray-400' : 'font-bold text-primary'}`}>
-                    ₹{Math.round(rawDeposit)}
+                  <span className={`text-xs ${waiverPercentage > 0 ? 'line-through text-gray-400 font-medium' : 'font-bold text-primary'}`}>
+                    ₹{baseDeposit}
                   </span>
                 </div>
-                {isCibilWaiverEligible && (
+                {waiverPercentage > 0 && (
                   <div className="flex justify-between items-center text-xs text-green-700 font-bold bg-green-50 p-1.5 rounded">
-                    <span>CIBIL Trust Waiver (-40%)</span>
-                    <span>₹{finalDeposit}</span>
+                    <span>CIBIL Trust Waiver (-{waiverPercentage}%)</span>
+                    <span>₹{refundableDeposit}</span>
                   </div>
                 )}
                 <div className="text-[10px] text-gray-400">
-                  Calculated based on {item.category} rules. Cap: ₹{rule.maxDepositCap}.
+                  Refunded automatically on return OTP verification.
                 </div>
               </div>
 
               {/* Grand Total */}
               <div className="flex justify-between text-base font-bold text-primary pt-3 border-t border-dashed border-gray-200 mt-2">
-                <span>Total Payable Now</span>
+                <span>Total Payable:</span>
                 <span className="text-lg text-accent">₹{totalPayableNow}</span>
               </div>
             </div>
