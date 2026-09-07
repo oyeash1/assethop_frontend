@@ -132,7 +132,7 @@ export default function ListingDetailsPage() {
   const refundableDeposit = Math.round(baseDeposit * (1 - waiverPercentage / 100));
   const totalPayableNow = baseRentalFee + totalUserPlatformServiceCharge + refundableDeposit;
 
-  // Handle Pay and Rent action
+  // Handle Pay and Rent action (Testing Period Mode)
   const handleRentNow = async () => {
     if (!isAuthenticated) {
       navigate('/login');
@@ -169,62 +169,15 @@ export default function ListingDetailsPage() {
 
       bookingId = bookingRes.data._id;
 
-      // 2. Generate Razorpay Order
-      const orderRes = await api.post('/payments/create-order', { bookingId });
-      if (orderRes?.status !== 'success' || !orderRes.data) {
-        throw new Error('Failed to generate secure payment order.');
+      // 2. Direct Test Mode Payment (Simulates payment without real payment gateway popups during testing period)
+      const payRes = await api.post('/payments/confirm-test-payment', { bookingId });
+
+      if (payRes?.status === 'success') {
+        alert('🎉 Payment Successful! Your rental order has been placed in Escrow.');
+        navigate('/dashboard');
+      } else {
+        throw new Error(payRes?.message || 'Failed to process payment.');
       }
-
-      const { razorpayOrderId, amount, currency } = orderRes.data;
-
-      // 3. Mount Razorpay Checkout frame
-      const options = {
-        key: 'rzp_test_TAeFddw3UHUx1O', // Razorpay Test Key (from backend .env)
-        amount: amount,
-        currency: currency,
-        name: "AssetHop Rentals",
-        description: `Rent ${item.title} for ${durationDays * 24} Hours (${durationDays} Days)`,
-        order_id: razorpayOrderId,
-        handler: async function (response) {
-          try {
-            // Verify payment signature
-            const verifyRes = await api.post('/payments/verify', {
-              bookingId,
-              razorpayOrderId: response.razorpay_order_id,
-              razorpayPaymentId: response.razorpay_payment_id,
-              razorpaySignature: response.razorpay_signature
-            });
-
-            if (verifyRes?.status === 'success') {
-              alert('🎉 Payment Successful! Your rental order has been verified.');
-              navigate('/dashboard');
-            } else {
-              alert('❌ Payment validation signature mismatch.');
-            }
-          } catch (verifyErr) {
-            alert(`Verification Error: ${verifyErr.message}`);
-          }
-        },
-        modal: {
-          ondismiss: function () {
-            handleCancelBooking(bookingId);
-          }
-        },
-        prefill: {
-          name: user?.name || "Customer Name",
-          email: user?.email || "customer@example.com"
-        },
-        theme: {
-          color: "#7F2A3C" // Red Velvet theme color matching accent
-        }
-      };
-
-      const rzp = new window.Razorpay(options);
-      rzp.on('payment.failed', function (response) {
-        alert(`Payment failed: ${response.error.description}`);
-        handleCancelBooking(bookingId);
-      });
-      rzp.open();
 
     } catch (err) {
       alert(`Booking Error: ${err.message}`);
@@ -436,7 +389,7 @@ export default function ListingDetailsPage() {
                 className="w-full mt-6 py-3.5 bg-accent hover:bg-accent-hover text-white font-bold rounded-xl transition-all duration-200 shadow-md shadow-accent/20 flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
               >
                 {bookingLoading ? (
-                  <span>Generating Order...</span>
+                  <span>Processing Payment...</span>
                 ) : item.status !== 'AVAILABLE' ? (
                   <span>Item Currently Booked</span>
                 ) : (

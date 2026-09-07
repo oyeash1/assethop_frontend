@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
-import { List, Package, ChevronRight, Check, MapPin, Navigation, Camera, X, Upload, AlertTriangle, Clock, CheckCircle } from 'lucide-react';
+import { List, Package, ChevronRight, Check, MapPin, Navigation, Camera, X, Upload, AlertTriangle, Clock, CheckCircle, FileText } from 'lucide-react';
 import L from 'leaflet';
+import { printInvoice } from '../core/utils/invoiceHelper';
+import LiveCameraModal from './LiveCameraModal';
 
 const hostIcon = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
@@ -49,6 +51,8 @@ export default function RenterBookingsList({
   formatDuration,
   getHaversineDistance
 }) {
+  const [activeCameraBookingId, setActiveCameraBookingId] = useState(null);
+
   return (
     <div>
       <h3 className="text-lg font-bold text-primary flex items-center gap-2">
@@ -152,6 +156,20 @@ export default function RenterBookingsList({
                   })}
                 </div>
 
+                <div className="lg:col-span-3 flex justify-between items-center bg-white px-2 py-1 border-b border-gray-100 pb-3 -mt-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-gray-400">BOOKING ID:</span>
+                    <span className="text-xs font-mono font-bold text-gray-700">{booking._id}</span>
+                  </div>
+                  <button
+                    onClick={() => printInvoice(booking, 'RENTER')}
+                    className="px-3 py-1 bg-accent/10 hover:bg-accent/20 text-accent text-xs font-bold rounded-lg border border-accent/20 transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <FileText className="h-3.5 w-3.5" />
+                    {booking.status === 'COMPLETED' ? 'Download Final Invoice' : 'Download Payment Invoice'}
+                  </button>
+                </div>
+
                 {/* STEP 1 CONTENT: Navigate to Host */}
                 {currentStep === 1 && (
                   <>
@@ -228,24 +246,22 @@ export default function RenterBookingsList({
                       </div>
 
                       <div className="space-y-3">
-                        {/* Native camera capture file picker */}
-                        <input 
-                          type="file" 
-                          accept="image/*" 
-                          capture="camera" 
-                          onChange={(e) => handlePickupPhotoCapture(e, booking._id)} 
-                          className="hidden" 
-                          id={`camera-input-${booking._id}`} 
-                        />
-                        
-                        <label 
-                          htmlFor={`camera-input-${booking._id}`}
-                          className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-accent/40 rounded-xl cursor-pointer hover:bg-accent/5 transition-all text-center space-y-1.5"
+                        <button 
+                          type="button"
+                          onClick={() => setActiveCameraBookingId(booking._id)}
+                          className="w-full flex flex-col items-center justify-center p-6 border-2 border-dashed border-accent/40 rounded-xl cursor-pointer hover:bg-accent/5 transition-all text-center space-y-1.5"
                         >
                           <Camera className="h-7 w-7 text-accent animate-bounce" />
                           <span className="text-xs font-bold text-gray-700">Launch Live Camera</span>
-                          <span className="text-[9px] text-gray-400">Strictly live capture only • Gallery selection blocked</span>
-                        </label>
+                          <span className="text-[9px] text-gray-400">Strictly live capture • Viewfinder preview stream</span>
+                        </button>
+
+                        <LiveCameraModal
+                          isOpen={activeCameraBookingId === booking._id}
+                          onClose={() => setActiveCameraBookingId(null)}
+                          onCapture={handlePickupPhotoCapture}
+                          bookingId={booking._id}
+                        />
 
                         {/* Previews */}
                         <div className="space-y-1">

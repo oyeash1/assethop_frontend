@@ -1,6 +1,9 @@
-import React from 'react';
-import { List, Package, AlertTriangle, Key, Clock } from 'lucide-react';
+import React, { useState } from 'react';
+import { List, Package, AlertTriangle, Key, Clock, FileText, Camera, Upload, X, ShieldAlert, CheckCircle } from 'lucide-react';
 import DeliverySimulator from './DeliverySimulator';
+import LiveCameraModal from './LiveCameraModal';
+import RaiseDisputeModal from './RaiseDisputeModal';
+import { printInvoice } from '../core/utils/invoiceHelper';
 
 export default function HostBookingsList({
   hostRequests,
@@ -16,9 +19,17 @@ export default function HostBookingsList({
   setReturnOtpFields,
   handleVerifyReturnOtp,
   handleSimulateMovement,
+  hostReturnPhotos = {},
+  handleReturnPhotoCapture,
+  removeReturnPhoto,
+  photoUploading = {},
+  handleUploadAndLockReturnPhotos,
+  loadData,
   now,
   formatDuration
 }) {
+  const [activeCameraBookingId, setActiveCameraBookingId] = useState(null);
+  const [disputeBooking, setDisputeBooking] = useState(null);
   return (
     <div className="space-y-6">
       <h3 className="text-lg font-bold text-primary flex items-center gap-2">
@@ -46,7 +57,7 @@ export default function HostBookingsList({
                 
                 {/* Left column: metadata & OTP verification */}
                 <div className="space-y-4">
-                  <div className="flex justify-between items-start">
+                  <div className="flex justify-between items-start gap-4">
                     <div>
                       <span className="px-2 py-0.5 bg-gray-100 text-gray-700 text-[10px] font-bold rounded uppercase">
                         {booking.listingId?.category}
@@ -55,6 +66,15 @@ export default function HostBookingsList({
                         {booking.listingId?.title}
                       </h4>
                     </div>
+                    
+                    <button
+                      onClick={() => printInvoice(booking, 'HOST')}
+                      className="px-2.5 py-1 bg-accent/10 hover:bg-accent/20 text-accent text-[11px] font-bold rounded-lg border border-accent/20 transition-all flex items-center gap-1 cursor-pointer shrink-0"
+                      title="Download Settlement Statement"
+                    >
+                      <FileText className="h-3.5 w-3.5" />
+                      Earning Receipt
+                    </button>
                   </div>
 
                   {/* Dates & Payout Breakdown */}
@@ -203,32 +223,146 @@ export default function HostBookingsList({
                         );
                       })()}
 
-                      {/* Return OTP Exchange Form */}
+                      {/* Mandatory Return Inspection Photos Section */}
                       <div className="bg-gray-55 p-4 rounded-xl border border-gray-200 space-y-3">
-                        <h5 className="text-xs font-bold text-gray-700 flex items-center gap-1.5">
-                          <Key className="h-4 w-4 text-accent animate-pulse" />
-                          Confirm Rental Return OTP
-                        </h5>
-                        <div className="flex gap-2">
-                          <input
-                            type="text"
-                            maxLength="6"
-                            placeholder="Enter Return OTP"
-                            value={returnOtpFields[booking._id] || ''}
-                            onChange={(e) => setReturnOtpFields({
-                              ...returnOtpFields,
-                              [booking._id]: e.target.value
-                            })}
-                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm text-center font-mono focus:outline-none focus:ring-1 focus:ring-accent"
-                          />
-                          <button
-                            onClick={() => handleVerifyReturnOtp(booking._id)}
-                            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded-lg transition-all"
-                          >
-                            Confirm
-                          </button>
+                        <div className="flex items-center justify-between">
+                          <h5 className="text-xs font-bold text-gray-800 flex items-center gap-1.5">
+                            <Camera className="h-4 w-4 text-accent" />
+                            Return Inspection Photos *
+                          </h5>
+                          {booking.returnPhotos && booking.returnPhotos.length > 0 ? (
+                            <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
+                              <CheckCircle className="h-3 w-3" /> Photos Locked
+                            </span>
+                          ) : (
+                            <span className="text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-bold">
+                              Mandatory Before Return / Dispute
+                            </span>
+                          )}
                         </div>
+
+                        {booking.returnPhotos && booking.returnPhotos.length > 0 ? (
+                          <div className="grid grid-cols-4 gap-2">
+                            {booking.returnPhotos.map((photoUrl, idx) => (
+                              <div key={idx} className="h-16 rounded-lg overflow-hidden border border-gray-200 bg-gray-100">
+                                <img src={photoUrl} alt={`Return Inspection ${idx + 1}`} className="w-full h-full object-cover" />
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            <p className="text-[11px] text-gray-500">
+                              Capture at least 2 live photos of the returned item to verify its condition or raise a dispute if damaged.
+                            </p>
+
+                            {/* Captured Thumbnails */}
+                            {((hostReturnPhotos[booking._id] || []).length > 0) && (
+                              <div className="grid grid-cols-4 gap-2">
+                                {(hostReturnPhotos[booking._id] || []).map((photoUrl, idx) => (
+                                  <div key={idx} className="relative h-16 rounded-lg overflow-hidden border border-gray-200 bg-gray-100 group">
+                                    <img src={photoUrl} alt={`Captured ${idx + 1}`} className="w-full h-full object-cover" />
+                                    <button
+                                      onClick={() => removeReturnPhoto(booking._id, idx)}
+                                      className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-0.5 opacity-90 hover:opacity-100 transition-opacity"
+                                    >
+                                      <X className="h-3 w-3" />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Camera Action Buttons */}
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setActiveCameraBookingId(booking._id)}
+                                disabled={photoUploading[booking._id]}
+                                className="flex-1 py-2 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm"
+                              >
+                                <Camera className="h-4 w-4 text-emerald-400" />
+                                <span>Launch Live Camera</span>
+                              </button>
+
+                              <label className="py-2 px-3 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl flex items-center justify-center gap-1 cursor-pointer transition-all border border-gray-300">
+                                <Upload className="h-3.5 w-3.5" />
+                                <span>File</span>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={(e) => handleReturnPhotoCapture(e, booking._id)}
+                                />
+                              </label>
+                            </div>
+
+                            {/* Lock Return Photos Button */}
+                            {((hostReturnPhotos[booking._id] || []).length >= 2) && (
+                              <button
+                                onClick={() => handleUploadAndLockReturnPhotos(booking._id)}
+                                className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-sm"
+                              >
+                                <CheckCircle className="h-4 w-4" />
+                                Save & Lock Return Photos ({(hostReturnPhotos[booking._id] || []).length})
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </div>
+
+                      {/* Return OTP & Dispute Form */}
+                      {(() => {
+                        const hasPhotos = (booking.returnPhotos && booking.returnPhotos.length > 0);
+                        return (
+                          <div className="bg-gray-55 p-4 rounded-xl border border-gray-200 space-y-3">
+                            <h5 className="text-xs font-bold text-gray-700 flex items-center justify-between">
+                              <span className="flex items-center gap-1.5">
+                                <Key className="h-4 w-4 text-accent animate-pulse" />
+                                Rental Return Action
+                              </span>
+                            </h5>
+
+                            {!hasPhotos ? (
+                              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-[11px] text-amber-800 font-medium">
+                                ⚠️ Please capture and lock return photos above to enable Return OTP verification or Dispute filing.
+                              </div>
+                            ) : (
+                              <div className="space-y-3">
+                                <div className="flex gap-2">
+                                  <input
+                                    type="text"
+                                    maxLength="6"
+                                    placeholder="Enter Return OTP"
+                                    value={returnOtpFields[booking._id] || ''}
+                                    onChange={(e) => setReturnOtpFields({
+                                      ...returnOtpFields,
+                                      [booking._id]: e.target.value
+                                    })}
+                                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm text-center font-mono focus:outline-none focus:ring-1 focus:ring-accent"
+                                  />
+                                  <button
+                                    onClick={() => handleVerifyReturnOtp(booking._id)}
+                                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded-lg transition-all"
+                                  >
+                                    Confirm Return
+                                  </button>
+                                </div>
+
+                                <div className="pt-1 border-t border-gray-200">
+                                  <button
+                                    type="button"
+                                    onClick={() => setDisputeBooking(booking)}
+                                    className="w-full py-2 bg-red-50 hover:bg-red-100 text-red-650 border border-red-200 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5"
+                                  >
+                                    <ShieldAlert className="h-4 w-4" />
+                                    <span>Raise Product Damage / Condition Dispute</span>
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
 
                       <button
                         onClick={() => {
@@ -250,6 +384,38 @@ export default function HostBookingsList({
                       >
                         {isSimulating ? 'Stop Simulator' : 'Open Delivery Simulator Map'}
                       </button>
+                    </div>
+                  )}
+
+                  {/* DISPUTED Trip Card */}
+                  {booking.status === 'DISPUTED' && (
+                    <div className="bg-red-50 p-4 rounded-xl border border-red-200 space-y-3">
+                      <div className="flex items-center gap-2 text-red-800">
+                        <ShieldAlert className="h-5 w-5 text-red-600" />
+                        <div>
+                          <h5 className="text-xs font-bold">Rental Trip Under Dispute</h5>
+                          <p className="text-[10px] text-red-600 font-medium">Escrow Payout Held on Security Lock (Admin Review in Progress)</p>
+                        </div>
+                      </div>
+
+                      <div className="bg-white p-3 rounded-lg border border-red-150 text-xs space-y-1.5">
+                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Dispute Status</p>
+                        <p className="text-gray-800 font-semibold">
+                          Host raised a rental damage/condition dispute upon asset return.
+                        </p>
+                        {booking.returnPhotos && booking.returnPhotos.length > 0 && (
+                          <div className="pt-1">
+                            <p className="text-[10px] text-gray-500 font-bold mb-1">Attached Return Proof ({booking.returnPhotos.length})</p>
+                            <div className="grid grid-cols-4 gap-1.5">
+                              {booking.returnPhotos.map((img, idx) => (
+                                <div key={idx} className="h-12 rounded overflow-hidden border border-gray-200">
+                                  <img src={img} alt="Evidence" className="w-full h-full object-cover" />
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
 
@@ -295,6 +461,28 @@ export default function HostBookingsList({
             );
           })}
         </div>
+      )}
+
+      {/* Live Return Inspection Camera Modal */}
+      {activeCameraBookingId && (
+        <LiveCameraModal
+          isOpen={!!activeCameraBookingId}
+          onClose={() => setActiveCameraBookingId(null)}
+          bookingId={activeCameraBookingId}
+          onCapture={(fileOrBlob) => handleReturnPhotoCapture(fileOrBlob, activeCameraBookingId)}
+        />
+      )}
+
+      {/* Raise Rental Dispute Modal */}
+      {disputeBooking && (
+        <RaiseDisputeModal
+          isOpen={!!disputeBooking}
+          onClose={() => setDisputeBooking(null)}
+          booking={disputeBooking}
+          onDisputeSuccess={() => {
+            if (loadData) loadData();
+          }}
+        />
       )}
     </div>
   );

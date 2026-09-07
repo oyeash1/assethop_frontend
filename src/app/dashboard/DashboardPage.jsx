@@ -73,6 +73,7 @@ export default function DashboardPage() {
   const [renterSteps, setRenterSteps] = useState({});
   const [userLocations, setUserLocations] = useState({});
   const [capturedPhotos, setCapturedPhotos] = useState({});
+  const [hostReturnPhotos, setHostReturnPhotos] = useState({});
   const [photoUploading, setPhotoUploading] = useState({});
   const [returnOtpFields, setReturnOtpFields] = useState({});
   const [now, setNow] = useState(new Date());
@@ -166,8 +167,16 @@ export default function DashboardPage() {
     return `${hours.toString().padStart(2, '0')}h ${mins.toString().padStart(2, '0')}m ${secs.toString().padStart(2, '0')}s`;
   };
 
-  const handlePickupPhotoCapture = async (e, bookingId) => {
-    const file = e.target.files[0];
+  const handlePickupPhotoCapture = async (fileOrEvent, bookingId) => {
+    let file = null;
+    if (fileOrEvent?.target?.files) {
+      file = fileOrEvent.target.files[0];
+    } else if (fileOrEvent instanceof File || fileOrEvent instanceof Blob) {
+      file = fileOrEvent instanceof File 
+        ? fileOrEvent 
+        : new File([fileOrEvent], `camera_snap_${Date.now()}.jpg`, { type: 'image/jpeg' });
+    }
+
     if (!file) return;
 
     setPhotoUploading(prev => ({ ...prev, [bookingId]: true }));
@@ -217,6 +226,68 @@ export default function DashboardPage() {
       }
     } catch (err) {
       alert(`Failed to save pickup photos: ${err.message}`);
+    }
+  };
+
+  const handleReturnPhotoCapture = async (fileOrEvent, bookingId) => {
+    let file = null;
+    if (fileOrEvent?.target?.files) {
+      file = fileOrEvent.target.files[0];
+    } else if (fileOrEvent instanceof File || fileOrEvent instanceof Blob) {
+      file = fileOrEvent instanceof File 
+        ? fileOrEvent 
+        : new File([fileOrEvent], `return_snap_${Date.now()}.jpg`, { type: 'image/jpeg' });
+    }
+
+    if (!file) return;
+
+    setPhotoUploading(prev => ({ ...prev, [bookingId]: true }));
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+      const res = await api.post('/listings/upload', formData);
+      if (res?.status === 'success') {
+        setHostReturnPhotos(prev => {
+          const current = prev[bookingId] || [];
+          return {
+            ...prev,
+            [bookingId]: [...current, res.url]
+          };
+        });
+      }
+    } catch (err) {
+      alert(`Return inspection photo failed to upload: ${err.message}`);
+    } finally {
+      setPhotoUploading(prev => ({ ...prev, [bookingId]: false }));
+    }
+  };
+
+  const removeReturnPhoto = (bookingId, index) => {
+    setHostReturnPhotos(prev => {
+      const current = prev[bookingId] || [];
+      return {
+        ...prev,
+        [bookingId]: current.filter((_, i) => i !== index)
+      };
+    });
+  };
+
+  const handleUploadAndLockReturnPhotos = async (bookingId) => {
+    const photos = hostReturnPhotos[bookingId] || [];
+    if (photos.length < 2) {
+      alert('Please capture at least 2 return inspection photos of the asset before proceeding.');
+      return;
+    }
+
+    try {
+      const res = await api.post('/bookings/upload-return-photos', { bookingId, photos });
+      if (res?.status === 'success') {
+        alert('🎉 Return inspection photos uploaded and locked successfully.');
+        loadData();
+      }
+    } catch (err) {
+      alert(`Failed to save return inspection photos: ${err.message}`);
     }
   };
 
@@ -615,6 +686,12 @@ export default function DashboardPage() {
               setReturnOtpFields={setReturnOtpFields}
               handleVerifyReturnOtp={handleVerifyReturnOtp}
               handleSimulateMovement={handleSimulateMovement}
+              hostReturnPhotos={hostReturnPhotos}
+              handleReturnPhotoCapture={handleReturnPhotoCapture}
+              removeReturnPhoto={removeReturnPhoto}
+              photoUploading={photoUploading}
+              handleUploadAndLockReturnPhotos={handleUploadAndLockReturnPhotos}
+              loadData={loadData}
               now={now}
               formatDuration={formatDuration}
             />
