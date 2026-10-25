@@ -299,11 +299,11 @@ export default function LandingPage() {
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-gradient-to-tr from-rose-200/40 via-cherry-100/30 to-transparent rounded-full blur-3xl pointer-events-none -z-10" />
         <div className="absolute top-1/3 right-0 w-[450px] h-[450px] bg-cherry-500/5 rounded-full blur-3xl pointer-events-none -z-10" />
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
 
             {/* Left Column: Hero Text & Actions */}
-            <div className="lg:col-span-6 space-y-6 text-left">
+            <div className="lg:col-span-5 space-y-6 text-left">
               {/* Badge */}
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-rose-50 border border-rose-200 text-cherry-700 text-xs font-bold tracking-wide shadow-sm">
                 <span className="w-2 h-2 rounded-full bg-cherry-600 animate-pulse"></span>
@@ -391,42 +391,38 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Right Column: Hero Visual Showcase */}
-            <div className="lg:col-span-6 relative">
-              <div className="relative mx-auto max-w-lg lg:max-w-none">
+            {/* Right Column: Hero Visual Showcase (Enlarged) */}
+            <div className="lg:col-span-7 relative">
+              <div className="relative mx-auto max-w-xl sm:max-w-2xl lg:max-w-none lg:scale-105 xl:scale-110 lg:translate-x-2 transition-transform duration-300">
 
                 {/* Glow ring behind gear */}
-                <div className="absolute inset-0 bg-gradient-to-tr from-cherry-500/20 via-rose-300/30 to-amber-200/20 rounded-3xl blur-2xl -z-10" />
+                <div className="absolute -inset-10 bg-gradient-to-tr from-cherry-500/15 via-rose-200/30 to-amber-100/20 rounded-full blur-3xl -z-10 pointer-events-none" />
 
-                {/* Hero Showcase Image */}
-                <div className="relative rounded-3xl overflow-hidden border border-rose-100 shadow-2xl shadow-rose-950/10 group bg-white">
-                  <img
-                    src="/images/hero_gear_showcase.jpg"
-                    alt="Rent Premium Gear - AssetHop"
-                    className="w-full h-auto object-cover transform transition-transform duration-700 group-hover:scale-105"
-                  />
+                {/* Hero Showcase Image with Soft Corner Fade & Background Seamless Blend */}
+                <div className="relative group">
+                  <div
+                    className="relative overflow-hidden"
+                    style={{
+                      maskImage: 'radial-gradient(ellipse 85% 80% at 50% 50%, black 40%, rgba(0, 0, 0, 0.88) 60%, rgba(0, 0, 0, 0.22) 82%, transparent 97%)',
+                      WebkitMaskImage: 'radial-gradient(ellipse 85% 80% at 50% 50%, black 40%, rgba(0, 0, 0, 0.88) 60%, rgba(0, 0, 0, 0.22) 82%, transparent 97%)',
+                    }}
+                  >
+                    <img
+                      src="/images/hero_gear_showcase.jpg"
+                      alt="Rent Premium Gear - AssetHop"
+                      className="w-full h-auto object-cover transform transition-transform duration-700 group-hover:scale-105"
+                    />
 
-                  {/* Subtle cherry gradient edge overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 via-transparent to-transparent pointer-events-none" />
-
-                  {/* Handwritten Style Annotation badge */}
-                  <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-2xl border border-rose-100 shadow-lg text-slate-900 flex items-center gap-1.5 transform rotate-2">
-                    <span className="font-handwriting text-base font-bold text-cherry-700">More Possibilities. Less Ownership.</span>
-                    <span className="text-sm">👑</span>
+                    {/* Multi-angle Soft Vignette Overlays to seamlessly dissolve outer edges into white background */}
+                    <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_85%_80%_at_50%_50%,transparent_45%,rgba(255,255,255,0.4)_68%,white_97%)]" />
+                    <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-white/50 via-transparent to-white/40" />
+                    <div className="absolute inset-0 pointer-events-none bg-gradient-to-r from-white/40 via-transparent to-white/40" />
                   </div>
 
-                  {/* Floating Live Trust Approval Widget */}
-                  <div className="absolute bottom-4 left-4 right-4 sm:right-auto bg-white/95 backdrop-blur-md p-3 rounded-2xl border border-rose-100 shadow-xl flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-cherry-600 text-white flex items-center justify-center font-bold text-xs shadow-md shadow-cherry-600/30">
-                      ₹0
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-1">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                        <span className="text-xs font-black text-slate-900">Instant Zero-Deposit Approved</span>
-                      </div>
-                      <p className="text-[10px] text-slate-500 font-medium">Hyperlocal CIBIL Trust Underwriting</p>
-                    </div>
+                  {/* Handwritten Style Annotation badge */}
+                  <div className="absolute top-2 right-2 sm:top-4 sm:right-4 z-10 bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-2xl border border-rose-100/80 shadow-md text-slate-900 flex items-center gap-1.5 transform rotate-2">
+                    <span className="font-handwriting text-base font-bold text-cherry-700">More Possibilities. Less Ownership.</span>
+                    <span className="text-sm">👑</span>
                   </div>
                 </div>
 
