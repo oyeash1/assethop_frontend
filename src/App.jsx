@@ -1,6 +1,5 @@
-// src/App.jsx
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from './core/hooks/useAuth';
 import { api } from './core/api/client';
 import HomePage from './app/home/HomePage';
@@ -9,22 +8,26 @@ import LandingPage from './app/landing/LandingPage';
 import ListingDetailsPage from './app/listing/ListingDetailsPage';
 import DashboardPage from './app/dashboard/DashboardPage';
 import ProfilePage from './app/profile/ProfilePage';
-import { Compass, User, LogOut, ShieldAlert, Sparkles, LayoutDashboard, Mail, ShieldCheck, X, Upload } from 'lucide-react';
+import { Compass, User, LogOut, ShieldAlert, Sparkles, LayoutDashboard } from 'lucide-react';
+import { Toaster } from 'react-hot-toast';
 
 function NavigationBar() {
   const { isAuthenticated, user, logout, cibil, setCibil } = useAuth();
   const navigate = useNavigate();
 
   return (
-    <header className="bg-primary text-white border-b border-primary-dark sticky top-0 z-50 shadow-md">
+    <header className="bg-white text-slate-900 border-b border-rose-100 sticky top-0 z-50 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           
           {/* Logo */}
           <div className="flex items-center gap-2">
-            <Link to="/" className="text-2xl font-extrabold tracking-tight text-white hover:text-accent-light transition-all flex items-center gap-1.5">
-              <span className="text-accent text-3xl font-black">Asset</span>
-              <span>Hop</span>
+            <Link to="/" className="text-2xl font-black tracking-tight text-slate-900 hover:opacity-90 transition-all flex items-center gap-1.5">
+              <span className="w-8 h-8 rounded-xl bg-cherry-600 text-white flex items-center justify-center text-sm shadow-md shadow-cherry-600/30">
+                <Sparkles className="w-4 h-4" />
+              </span>
+              <span>Asset</span>
+              <span className="text-cherry-600">Hop</span>
             </Link>
           </div>
 
@@ -32,30 +35,30 @@ function NavigationBar() {
           <div className="flex items-center gap-6">
             {isAuthenticated && (
               <>
-                <Link to="/" className="text-sm font-semibold text-gray-300 hover:text-white transition-all flex items-center gap-1.5">
-                  <Compass className="h-4 w-4 text-accent" />
+                <Link to="/" className="text-sm font-semibold text-slate-600 hover:text-cherry-600 transition-all flex items-center gap-1.5">
+                  <Compass className="h-4 w-4 text-cherry-600" />
                   Marketplace
                 </Link>
 
-                <Link to="/dashboard" className="text-sm font-semibold text-gray-300 hover:text-white transition-all flex items-center gap-1.5">
-                  <LayoutDashboard className="h-4 w-4 text-accent" />
+                <Link to="/dashboard" className="text-sm font-semibold text-slate-600 hover:text-cherry-600 transition-all flex items-center gap-1.5">
+                  <LayoutDashboard className="h-4 w-4 text-cherry-600" />
                   Dashboard
                 </Link>
 
                 {user?.role === 'SUPER_ADMIN' && (
-                  <a href="http://localhost:5174" target="_blank" rel="noreferrer" className="text-sm font-semibold text-gray-300 hover:text-white transition-all flex items-center gap-1.5 bg-accent/20 px-3 py-1 rounded-xl border border-accent/30 text-accent-light">
-                    <ShieldAlert className="h-4 w-4 text-accent" />
+                  <a href="http://localhost:5174" target="_blank" rel="noreferrer" className="text-sm font-semibold text-cherry-700 hover:text-cherry-800 transition-all flex items-center gap-1.5 bg-rose-50 px-3 py-1 rounded-xl border border-rose-200">
+                    <ShieldAlert className="h-4 w-4 text-cherry-600" />
                     Admin Portal
                   </a>
                 )}
 
                 {/* CIBIL Score Trust Simulator widget in header */}
-                <div className="bg-primary-light border border-gray-700/60 rounded-xl px-3 py-1.5 flex items-center gap-3">
+                <div className="bg-rose-50/70 border border-rose-200/80 rounded-xl px-3 py-1.5 flex items-center gap-3">
                   <div className="hidden sm:block">
-                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Simulated CIBIL</p>
+                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Simulated CIBIL</p>
                     <div className="flex items-center gap-1">
-                      <Sparkles className="h-3 w-3 text-yellow-400" />
-                      <span className="text-xs font-bold">{cibil}</span>
+                      <Sparkles className="h-3 w-3 text-amber-500" />
+                      <span className="text-xs font-bold text-slate-900">{cibil}</span>
                     </div>
                   </div>
                   <input
@@ -65,10 +68,10 @@ function NavigationBar() {
                     step="25"
                     value={cibil}
                     onChange={(e) => setCibil(parseInt(e.target.value))}
-                    className="w-20 sm:w-24 accent-accent cursor-pointer h-1 bg-gray-700 rounded-lg appearance-none"
+                    className="w-20 sm:w-24 accent-cherry-600 cursor-pointer h-1 bg-rose-200 rounded-lg appearance-none"
                   />
                   <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded ${
-                    cibil >= 750 ? 'bg-green-950 text-green-400' : 'bg-red-950 text-red-400'
+                    cibil >= 750 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
                   }`}>
                     {cibil >= 750 ? 'Waiver' : 'Full Dep'}
                   </span>
@@ -78,13 +81,13 @@ function NavigationBar() {
 
             {/* Auth Buttons */}
             {isAuthenticated ? (
-              <div className="flex items-center gap-4 border-l border-gray-700 pl-6">
+              <div className="flex items-center gap-4 border-l border-rose-200 pl-6">
                 <button
                   onClick={() => navigate('/profile')}
                   className="flex items-center gap-2.5 hover:opacity-90 transition-all focus:outline-none cursor-pointer group text-left"
                   title="View Profile"
                 >
-                  <div className="h-9 w-9 rounded-full bg-accent/25 hover:bg-accent/35 border border-accent/40 text-accent-light font-black flex items-center justify-center text-xs shadow-sm shadow-accent/15 group-hover:scale-105 transition-transform duration-200 overflow-hidden">
+                  <div className="h-9 w-9 rounded-full bg-rose-100 hover:bg-rose-200 border border-rose-300 text-cherry-700 font-black flex items-center justify-center text-xs shadow-sm group-hover:scale-105 transition-transform duration-200 overflow-hidden">
                     {user?.profileImage ? (
                       <img src={user.profileImage} alt="Profile" className="w-full h-full object-cover" />
                     ) : (
@@ -92,8 +95,8 @@ function NavigationBar() {
                     )}
                   </div>
                   <div className="hidden md:block">
-                    <p className="text-xs font-bold text-gray-200 group-hover:text-white transition-colors">{user.name}</p>
-                    <p className="text-[10px] text-accent font-bold group-hover:text-accent-light transition-colors uppercase tracking-wider">{user.role}</p>
+                    <p className="text-xs font-bold text-slate-800 group-hover:text-cherry-600 transition-colors">{user.name}</p>
+                    <p className="text-[10px] text-cherry-600 font-bold uppercase tracking-wider">{user.role}</p>
                   </div>
                 </button>
                 
@@ -102,16 +105,16 @@ function NavigationBar() {
                     logout();
                     navigate('/');
                   }}
-                  className="p-2 bg-primary-light hover:bg-accent/20 rounded-lg text-gray-300 hover:text-white transition-all"
+                  className="p-2 bg-rose-50 hover:bg-rose-100 rounded-lg text-slate-600 hover:text-cherry-600 transition-all"
                   title="Sign Out"
                 >
-                  <LogOut className="h-4 w-4 text-accent" />
+                  <LogOut className="h-4 w-4 text-cherry-600" />
                 </button>
               </div>
             ) : (
               <Link
                 to="/login"
-                className="px-5 py-2.5 bg-accent hover:bg-accent-hover text-white text-xs font-bold rounded-lg transition-all shadow-md shadow-accent/15"
+                className="px-5 py-2.5 bg-cherry-600 hover:bg-cherry-700 text-white text-xs font-bold rounded-lg transition-all shadow-md shadow-cherry-600/20"
               >
                 Sign In
               </Link>
@@ -120,7 +123,6 @@ function NavigationBar() {
           </div>
         </div>
       </div>
-
     </header>
   );
 }
@@ -130,10 +132,34 @@ function HomeRoute() {
   return isAuthenticated ? <HomePage /> : <LandingPage />;
 }
 
-import { Toaster } from 'react-hot-toast';
+function AppContent() {
+  const { isAuthenticated } = useAuth();
+  const location = useLocation();
+  const isLandingPage = location.pathname === '/' && !isAuthenticated;
+
+  return (
+    <div className="min-h-screen bg-white text-slate-900 flex flex-col justify-between selection:bg-rose-100 selection:text-cherry-700">
+      <div>
+        {!isLandingPage && <NavigationBar />}
+        <Routes>
+          <Route path="/" element={<HomeRoute />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/listing/:id" element={<ListingDetailsPage />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+        </Routes>
+      </div>
+      {!isAuthenticated && !isLandingPage && (
+        <footer className="bg-slate-900 text-gray-400 text-center py-6 border-t border-slate-800 text-xs font-semibold mt-12">
+          &copy; {new Date().getFullYear()} AssetHop Rentals. Built for hyperlocal trust & lightning-fast handovers.
+        </footer>
+      )}
+    </div>
+  );
+}
 
 function App() {
-  const { isAuthenticated, login, logout } = useAuth();
+  const { login, logout } = useAuth();
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
@@ -147,7 +173,6 @@ function App() {
         }
       } catch (err) {
         console.error('Auth verification failed:', err);
-        // Do not force logout/clear store on network errors, only on actual 401/404 responses
         if (err.message && (err.message.includes('401') || err.message.includes('Unauthorized') || err.message.includes('not found'))) {
           logout();
         }
@@ -160,8 +185,8 @@ function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-bgmain">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div>
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cherry-600"></div>
       </div>
     );
   }
@@ -169,23 +194,7 @@ function App() {
   return (
     <Router>
       <Toaster position="top-right" />
-      <div className="min-h-screen bg-bgmain text-primary flex flex-col justify-between selection:bg-accent/30 selection:text-primary">
-        <div>
-          <NavigationBar />
-          <Routes>
-            <Route path="/" element={<HomeRoute />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/listing/:id" element={<ListingDetailsPage />} />
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/profile" element={<ProfilePage />} />
-          </Routes>
-        </div>
-        {!isAuthenticated && (
-          <footer className="bg-primary text-gray-400 text-center py-6 border-t border-primary-dark text-xs font-semibold mt-12">
-            &copy; {new Date().getFullYear()} AssetHop Rentals. Built for hyperlocal trust & lightning-fast handovers.
-          </footer>
-        )}
-      </div>
+      <AppContent />
     </Router>
   );
 }

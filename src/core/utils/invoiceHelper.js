@@ -254,7 +254,7 @@ export function printInvoice(booking, role = 'RENTER') {
         }
 
         .logo span {
-          color: #7F2A3C; /* AssetHop Red Velvet */
+          color: #880808; /* AssetHop Red */
         }
 
         .invoice-details {
@@ -265,7 +265,7 @@ export function printInvoice(booking, role = 'RENTER') {
           font-size: 20px;
           font-weight: 800;
           margin: 0;
-          color: #7F2A3C;
+          color: #880808;
           text-transform: uppercase;
           letter-spacing: 0.05em;
         }
@@ -394,11 +394,11 @@ export function printInvoice(booking, role = 'RENTER') {
         }
 
         .highlight {
-          color: #7F2A3C !important;
+          color: #880808 !important;
         }
 
         .highlight-accent {
-          color: #7F2A3C !important;
+          color: #880808 !important;
           font-size: 20px !important;
         }
 
@@ -430,7 +430,7 @@ export function printInvoice(booking, role = 'RENTER') {
         }
 
         .actions-bar button {
-          background-color: #7F2A3C;
+          background-color: #880808;
           color: white;
           border: none;
           padding: 8px 16px;
@@ -442,7 +442,7 @@ export function printInvoice(booking, role = 'RENTER') {
         }
 
         .actions-bar button:hover {
-          background-color: #98334a;
+          background-color: #700707;
         }
 
         @media print {
