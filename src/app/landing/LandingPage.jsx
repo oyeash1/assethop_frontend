@@ -1,25 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Sparkles, 
-  ShieldCheck, 
-  Shield, 
-  ArrowRight, 
-  Star, 
-  Search, 
-  User, 
-  Calendar, 
-  Package, 
-  RefreshCw, 
-  Camera, 
-  Lock, 
-  Headphones, 
-  Coins, 
-  Users, 
-  TrendingUp, 
-  CheckCircle2, 
-  X, 
-  ChevronRight, 
+import {
+  Sparkles,
+  ShieldCheck,
+  Shield,
+  ArrowRight,
+  Star,
+  Search,
+  User,
+  Calendar,
+  Package,
+  RefreshCw,
+  Camera,
+  Lock,
+  Headphones,
+  Coins,
+  Users,
+  TrendingUp,
+  CheckCircle2,
+  X,
+  ChevronRight,
   Sliders,
   Menu,
   Smartphone,
@@ -33,6 +33,16 @@ export default function LandingPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [trustModalOpen, setTrustModalOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const categoryScrollRef = useRef(null);
+
+  const scrollCategories = (direction) => {
+    if (categoryScrollRef.current) {
+      categoryScrollRef.current.scrollBy({
+        left: direction === 'right' ? 380 : -380,
+        behavior: 'smooth'
+      });
+    }
+  };
 
   // Trust Simulator state
   const [demoCibil, setDemoCibil] = useState(780);
@@ -141,14 +151,14 @@ export default function LandingPage() {
 
   return (
     <div className="bg-white text-slate-900 min-h-screen selection:bg-rose-100 selection:text-cherry-700 font-sans antialiased">
-      
+
       {/* ======================================================== */}
       {/* 1. TOP NAVIGATION BAR (White & Cherry Red)               */}
       {/* ======================================================== */}
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-rose-100 shadow-sm transition-all duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
-            
+
             {/* Logo */}
             <div className="flex items-center gap-3">
               <a href="#" className="flex items-center gap-1.5 group">
@@ -173,7 +183,7 @@ export default function LandingPage() {
             {/* Right Controls */}
             <div className="hidden sm:flex items-center gap-4">
               {/* Search Icon */}
-              <button 
+              <button
                 onClick={() => setSearchModalOpen(true)}
                 className="p-2.5 text-slate-600 hover:text-cherry-600 hover:bg-rose-50 rounded-full transition-colors"
                 title="Search Gear"
@@ -182,7 +192,7 @@ export default function LandingPage() {
               </button>
 
               {/* User Profile Icon */}
-              <button 
+              <button
                 onClick={() => navigate('/login')}
                 className="p-2.5 text-slate-600 hover:text-cherry-600 hover:bg-rose-50 rounded-full transition-colors"
                 title="Account"
@@ -209,7 +219,7 @@ export default function LandingPage() {
 
             {/* Mobile Menu Button */}
             <div className="flex sm:hidden items-center gap-2">
-              <button 
+              <button
                 onClick={() => setSearchModalOpen(true)}
                 className="p-2 text-slate-700 hover:text-cherry-600"
               >
@@ -228,36 +238,36 @@ export default function LandingPage() {
         {/* Mobile Dropdown Menu */}
         {mobileMenuOpen && (
           <div className="sm:hidden bg-white border-b border-rose-100 px-4 pt-2 pb-6 space-y-3 shadow-xl">
-            <a 
-              href="#categories" 
+            <a
+              href="#categories"
               onClick={() => setMobileMenuOpen(false)}
               className="block py-2 text-sm font-semibold text-slate-700 hover:text-cherry-600"
             >
               Explore Gear
             </a>
-            <a 
-              href="#how-it-works" 
+            <a
+              href="#how-it-works"
               onClick={() => setMobileMenuOpen(false)}
               className="block py-2 text-sm font-semibold text-slate-700 hover:text-cherry-600"
             >
               How It Works
             </a>
-            <a 
-              href="#for-hosts" 
+            <a
+              href="#for-hosts"
               onClick={() => setMobileMenuOpen(false)}
               className="block py-2 text-sm font-semibold text-slate-700 hover:text-cherry-600"
             >
               For Hosts
             </a>
-            <a 
-              href="#safety" 
+            <a
+              href="#safety"
               onClick={() => setMobileMenuOpen(false)}
               className="block py-2 text-sm font-semibold text-slate-700 hover:text-cherry-600"
             >
               Safety & Insurance
             </a>
-            <a 
-              href="#about" 
+            <a
+              href="#about"
               onClick={() => setMobileMenuOpen(false)}
               className="block py-2 text-sm font-semibold text-slate-700 hover:text-cherry-600"
             >
@@ -291,7 +301,7 @@ export default function LandingPage() {
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
-            
+
             {/* Left Column: Hero Text & Actions */}
             <div className="lg:col-span-6 space-y-6 text-left">
               {/* Badge */}
@@ -301,15 +311,14 @@ export default function LandingPage() {
               </div>
 
               {/* Main Headline */}
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-950 leading-[1.12]">
-                Rent Premium Gear. <br />
-                <span className="text-cherry-600">Zero Deposit</span> <br className="hidden sm:inline" />
-                for Eligible Users.
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-[#080D20] leading-[1.12]">
+                Rent Better. Own Less. <br />
+                <span className="text-[#A10D0D]">Zero Deposit.</span>
               </h1>
 
               {/* Description */}
               <p className="text-base sm:text-lg text-slate-600 max-w-xl leading-relaxed">
-                Cameras, drones, consoles, laptops, audio gear and more — rented from verified people near you.
+                From cameras and drones to gaming consoles and laptops — rent premium equipment from verified people near you, without the upfront deposit for eligible users.
               </p>
 
               {/* Buttons */}
@@ -330,51 +339,51 @@ export default function LandingPage() {
                 </button>
               </div>
 
-              {/* Trust Metric Badges */}
-              <div className="pt-8 border-t border-rose-100/80">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  
+              {/* Trust Metric Badges - Minimalist Centered Layout Matching Reference */}
+              <div className="pt-8 border-t border-slate-100">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-4">
+
                   {/* Rating */}
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-xl bg-amber-50 border border-amber-200 text-amber-500 flex items-center justify-center shrink-0">
-                      <Star className="w-4 h-4 fill-amber-400 text-amber-500" />
+                  <div className="flex flex-col items-center text-center space-y-2 group cursor-default">
+                    <div className="text-[#080D20] group-hover:text-[#A10D0D] transition-colors duration-200">
+                      <Star className="w-7 h-7 sm:w-8 sm:h-8" strokeWidth={1.6} />
                     </div>
-                    <div>
-                      <p className="text-sm font-extrabold text-slate-900 leading-none">4.9/5</p>
-                      <p className="text-[11px] text-slate-500 mt-0.5">from 12k+ rentals</p>
+                    <div className="space-y-0.5">
+                      <p className="text-xs sm:text-sm font-bold text-[#080D20] leading-tight">4.9/5 Rating</p>
+                      <p className="text-[11px] text-slate-500 font-medium">from 12k+ rentals</p>
                     </div>
                   </div>
 
                   {/* Verified Hosts */}
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-xl bg-rose-50 border border-rose-200 text-cherry-600 flex items-center justify-center shrink-0">
-                      <ShieldCheck className="w-4 h-4 text-cherry-600" />
+                  <div className="flex flex-col items-center text-center space-y-2 group cursor-default">
+                    <div className="text-[#080D20] group-hover:text-[#A10D0D] transition-colors duration-200">
+                      <ShieldCheck className="w-7 h-7 sm:w-8 sm:h-8" strokeWidth={1.6} />
                     </div>
-                    <div>
-                      <p className="text-sm font-extrabold text-slate-900 leading-none">Verified Hosts</p>
-                      <p className="text-[11px] text-slate-500 mt-0.5">KYC Checked</p>
+                    <div className="space-y-0.5">
+                      <p className="text-xs sm:text-sm font-bold text-[#080D20] leading-tight">Verified Hosts</p>
+                      <p className="text-[11px] text-slate-500 font-medium">KYC Checked</p>
                     </div>
                   </div>
 
                   {/* Secure Payments */}
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-xl bg-rose-50 border border-rose-200 text-cherry-600 flex items-center justify-center shrink-0">
-                      <Lock className="w-4 h-4 text-cherry-600" />
+                  <div className="flex flex-col items-center text-center space-y-2 group cursor-default">
+                    <div className="text-[#080D20] group-hover:text-[#A10D0D] transition-colors duration-200">
+                      <Lock className="w-7 h-7 sm:w-8 sm:h-8" strokeWidth={1.6} />
                     </div>
-                    <div>
-                      <p className="text-sm font-extrabold text-slate-900 leading-none">Secure Payments</p>
-                      <p className="text-[11px] text-slate-500 mt-0.5">Held Until Return</p>
+                    <div className="space-y-0.5">
+                      <p className="text-xs sm:text-sm font-bold text-[#080D20] leading-tight">Secure Payments</p>
+                      <p className="text-[11px] text-slate-500 font-medium">Held Until Return</p>
                     </div>
                   </div>
 
                   {/* Damage Protection */}
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-xl bg-rose-50 border border-rose-200 text-cherry-600 flex items-center justify-center shrink-0">
-                      <Shield className="w-4 h-4 text-cherry-600" />
+                  <div className="flex flex-col items-center text-center space-y-2 group cursor-default">
+                    <div className="text-[#080D20] group-hover:text-[#A10D0D] transition-colors duration-200">
+                      <Shield className="w-7 h-7 sm:w-8 sm:h-8" strokeWidth={1.6} />
                     </div>
-                    <div>
-                      <p className="text-sm font-extrabold text-slate-900 leading-none">Damage Protection</p>
-                      <p className="text-[11px] text-slate-500 mt-0.5">Clear Policies</p>
+                    <div className="space-y-0.5">
+                      <p className="text-xs sm:text-sm font-bold text-[#080D20] leading-tight">Damage Protection</p>
+                      <p className="text-[11px] text-slate-500 font-medium">Clear Policies</p>
                     </div>
                   </div>
 
@@ -385,18 +394,18 @@ export default function LandingPage() {
             {/* Right Column: Hero Visual Showcase */}
             <div className="lg:col-span-6 relative">
               <div className="relative mx-auto max-w-lg lg:max-w-none">
-                
+
                 {/* Glow ring behind gear */}
                 <div className="absolute inset-0 bg-gradient-to-tr from-cherry-500/20 via-rose-300/30 to-amber-200/20 rounded-3xl blur-2xl -z-10" />
 
                 {/* Hero Showcase Image */}
                 <div className="relative rounded-3xl overflow-hidden border border-rose-100 shadow-2xl shadow-rose-950/10 group bg-white">
-                  <img 
-                    src="/images/hero_gear_showcase.jpg" 
-                    alt="Rent Premium Gear - AssetHop" 
+                  <img
+                    src="/images/hero_gear_showcase.jpg"
+                    alt="Rent Premium Gear - AssetHop"
                     className="w-full h-auto object-cover transform transition-transform duration-700 group-hover:scale-105"
                   />
-                  
+
                   {/* Subtle cherry gradient edge overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 via-transparent to-transparent pointer-events-none" />
 
@@ -433,7 +442,7 @@ export default function LandingPage() {
       {/* ======================================================== */}
       <section id="categories" className="py-20 bg-white border-t border-rose-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          
+
           {/* Section Header */}
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-12">
             <div>
@@ -452,41 +461,197 @@ export default function LandingPage() {
               onClick={() => navigate('/login')}
               className="mt-4 md:mt-0 text-sm font-bold text-cherry-600 hover:text-cherry-700 flex items-center gap-1.5 transition-colors group"
             >
-              View All Categories 
+              View All Categories
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </button>
           </div>
 
-          {/* 7 Category Cards Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-4">
-            {categories.map((cat) => (
-              <div
-                key={cat.id}
-                onClick={() => setSelectedCategory(cat)}
-                className="group relative bg-white rounded-2xl p-3 border border-rose-100/90 hover:border-cherry-300 shadow-sm hover:shadow-xl hover:shadow-cherry-500/10 transition-all duration-300 cursor-pointer flex flex-col justify-between"
-              >
-                {/* Image */}
-                <div className="w-full aspect-square rounded-xl overflow-hidden bg-rose-50/50 flex items-center justify-center relative mb-3">
-                  <img 
-                    src={cat.image} 
-                    alt={cat.title} 
-                    className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                </div>
+          {/* Collage Category Layout Matching User Reference Image */}
+          <div className="relative">
+            {/* Scrollable Gallery Track */}
+            <div
+              ref={categoryScrollRef}
+              className="flex items-center gap-4 sm:gap-6 overflow-x-auto pb-6 pt-2 scrollbar-none snap-x select-none"
+            >
 
-                {/* Info */}
-                <div className="space-y-1">
-                  <h3 className="text-sm font-bold text-slate-900 group-hover:text-cherry-600 transition-colors">
-                    {cat.title}
-                  </h3>
-                  <div className="flex items-center gap-1 text-[11px] font-bold text-cherry-600 group-hover:text-cherry-700">
+              {/* Card 1: Left Medium Pill/Capsule */}
+              <div
+                onClick={() => setSelectedCategory(categories.find(c => c.id === 'camping') || categories[6])}
+                className="snap-start shrink-0 w-[210px] sm:w-[250px] h-[340px] sm:h-[400px] rounded-[2rem] overflow-hidden relative group cursor-pointer shadow-sm hover:shadow-xl transition-all duration-300 bg-slate-100"
+              >
+                <img
+                  src="/images/cat_camping.jpg"
+                  alt="Camping Gear"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/20 to-transparent opacity-80 group-hover:opacity-95 transition-opacity" />
+                <div className="absolute bottom-5 left-5 right-5 text-white">
+                  <span className="text-[10px] font-bold tracking-wider uppercase text-rose-300">Adventure</span>
+                  <h3 className="text-base sm:text-lg font-bold text-white leading-tight">Camping Gear</h3>
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-rose-200 mt-1">
                     <span>Explore</span>
-                    <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                   </div>
                 </div>
               </div>
-            ))}
+
+              {/* Card 2: Tall Vertical Capsule (Matching tall girl with luggage/backpack in reference) */}
+              <div
+                onClick={() => setSelectedCategory(categories.find(c => c.id === 'cameras') || categories[0])}
+                className="snap-start shrink-0 w-[240px] sm:w-[280px] h-[450px] sm:h-[510px] rounded-[2.2rem] overflow-hidden relative group cursor-pointer shadow-md hover:shadow-2xl transition-all duration-300 bg-slate-100"
+              >
+                <img
+                  src="/images/cat_creator_travel.jpg"
+                  alt="Creator & Travel Gear"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/15 to-transparent opacity-75 group-hover:opacity-90 transition-opacity" />
+                <div className="absolute bottom-6 left-6 right-6 text-white">
+                  <span className="text-[10px] font-bold tracking-wider uppercase text-rose-300">On The Go</span>
+                  <h3 className="text-lg sm:text-xl font-black text-white leading-tight">Travel & Creator Gear</h3>
+                  <p className="text-xs text-slate-300 mt-0.5 line-clamp-1">Cameras, smart luggage & rigs</p>
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-white bg-white/20 backdrop-blur-md px-3.5 py-1.5 rounded-full w-fit mt-3 group-hover:bg-[#A10D0D] transition-colors shadow-sm">
+                    <span>Explore Collection</span>
+                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Column 3: Stacked 2 Cards (Top 3A and Bottom 3B) */}
+              <div className="snap-start shrink-0 flex flex-col gap-5 sm:gap-5 justify-center">
+                {/* Card 3A (Top) */}
+                <div
+                  onClick={() => setSelectedCategory(categories.find(c => c.id === 'projectors') || categories[5])}
+                  className="w-[190px] sm:w-[220px] h-[215px] sm:h-[245px] rounded-[1.8rem] overflow-hidden relative group cursor-pointer shadow-sm hover:shadow-xl transition-all duration-300 bg-slate-100"
+                >
+                  <img
+                    src="/images/cat_projectors.jpg"
+                    alt="Projectors"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-80 group-hover:opacity-95 transition-opacity" />
+                  <div className="absolute bottom-4 left-4 right-4 text-white">
+                    <h3 className="text-sm sm:text-base font-bold text-white leading-tight">4K Projectors</h3>
+                    <p className="text-[11px] text-slate-300">Home Cinema & Events</p>
+                  </div>
+                </div>
+
+                {/* Card 3B (Bottom) */}
+                <div
+                  onClick={() => setSelectedCategory(categories.find(c => c.id === 'audio') || categories[4])}
+                  className="w-[190px] sm:w-[220px] h-[215px] sm:h-[245px] translate-x-5 rounded-[1.8rem] overflow-hidden relative group cursor-pointer shadow-sm hover:shadow-xl transition-all duration-300 bg-slate-100"
+                >
+                  <img
+                    src="/images/cat_audio.jpg"
+                    alt="Audio Gear"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-80 group-hover:opacity-95 transition-opacity" />
+                  <div className="absolute bottom-4 left-4 right-4 text-white">
+                    <h3 className="text-sm sm:text-base font-bold text-white leading-tight">Studio Audio</h3>
+                    <p className="text-[11px] text-slate-300">Headphones & Mics</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Column 4: Top Wide Card & Bottom Portrait Card */}
+              <div className="snap-start shrink-0 flex flex-col items-center gap-4 sm:gap-5 justify-center">
+                {/* Card 4A (Wide Landscape - matching maroon shirt in reference) */}
+                <div
+                  onClick={() => setSelectedCategory(categories.find(c => c.id === 'gaming') || categories[3])}
+                  className="w-[320px] sm:w-[400px] h-[215px] sm:h-[245px] rounded-[2rem] overflow-hidden relative group cursor-pointer shadow-sm hover:shadow-xl transition-all duration-300 bg-slate-100"
+                >
+                  <img
+                    src="/images/cat_creator_maroon.jpg"
+                    alt="Creator Lifestyle & Gaming"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-80 group-hover:opacity-95 transition-opacity" />
+                  <div className="absolute bottom-4 left-5 right-5 text-white flex items-end justify-between">
+                    <div>
+                      <span className="text-[10px] font-bold tracking-wider uppercase text-rose-300">Entertainment</span>
+                      <h3 className="text-base sm:text-lg font-bold text-white leading-tight">Gaming & Lifestyle</h3>
+                      <p className="text-[11px] text-slate-300">PS5, VR & Console Rigs</p>
+                    </div>
+                    <div className="px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-semibold group-hover:bg-[#A10D0D] transition-colors flex items-center gap-1">
+                      <span>Rent</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Card 4B (Bottom Portrait - centered relative to top card) */}
+                <div
+                  onClick={() => setSelectedCategory(categories.find(c => c.id === 'cameras') || categories[0])}
+                  className="self-center mx-auto w-[220px] sm:w-[260px] h-[215px] sm:h-[245px] rounded-[2rem] overflow-hidden relative group cursor-pointer shadow-sm hover:shadow-xl transition-all duration-300 bg-slate-100"
+                >
+                  <img
+                    src="/images/cat_creator_beige.jpg"
+                    alt="Cameras"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-80 group-hover:opacity-95 transition-opacity" />
+                  <div className="absolute bottom-4 left-4 right-4 text-white">
+                    <h3 className="text-sm sm:text-base font-bold text-white leading-tight">Pro Cinema & DSLR</h3>
+                    <p className="text-[11px] text-slate-300">Sony Alpha, Canon R & Lenses</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 5: Medium Portrait (Drones) */}
+              <div
+                onClick={() => setSelectedCategory(categories.find(c => c.id === 'drones') || categories[1])}
+                className="snap-start shrink-0 w-[220px] sm:w-[260px] h-[340px] sm:h-[400px] rounded-[2rem] overflow-hidden relative group cursor-pointer shadow-sm hover:shadow-xl transition-all duration-300 bg-slate-100"
+              >
+                <img
+                  src="/images/cat_drones.jpg"
+                  alt="Drones"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-80 group-hover:opacity-95 transition-opacity" />
+                <div className="absolute bottom-5 left-5 right-5 text-white">
+                  <span className="text-[10px] font-bold tracking-wider uppercase text-rose-300">Aerial</span>
+                  <h3 className="text-base sm:text-lg font-bold text-white leading-tight">Drones & Aerial</h3>
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-rose-200 mt-1">
+                    <span>Explore</span>
+                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 6: Workstations (Laptops) */}
+              <div
+                onClick={() => setSelectedCategory(categories.find(c => c.id === 'laptops') || categories[2])}
+                className="snap-start shrink-0 w-[220px] sm:w-[260px] h-[340px] sm:h-[400px] rounded-[2rem] overflow-hidden relative group cursor-pointer shadow-sm hover:shadow-xl transition-all duration-300 bg-slate-100"
+              >
+                <img
+                  src="/images/cat_laptops.jpg"
+                  alt="Laptops"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-80 group-hover:opacity-95 transition-opacity" />
+                <div className="absolute bottom-5 left-5 right-5 text-white">
+                  <span className="text-[10px] font-bold tracking-wider uppercase text-rose-300">Computing</span>
+                  <h3 className="text-base sm:text-lg font-bold text-white leading-tight">Laptops & MacBooks</h3>
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-rose-200 mt-1">
+                    <span>Explore</span>
+                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Navigation Arrow Button (Matching reference arrow on right) */}
+              <div className="snap-start shrink-0 pr-2 sm:pr-4 flex items-center">
+                <button
+                  onClick={() => scrollCategories('right')}
+                  className="w-14 h-14 rounded-full border-2 border-slate-200 bg-white hover:bg-rose-50 text-slate-800 hover:text-[#A10D0D] hover:border-[#A10D0D] shadow-md hover:shadow-lg flex items-center justify-center transition-all cursor-pointer group"
+                  title="Scroll next categories"
+                >
+                  <ArrowRight className="w-6 h-6 group-hover:translate-x-0.5 transition-transform" />
+                </button>
+              </div>
+
+            </div>
           </div>
 
         </div>
@@ -497,7 +662,7 @@ export default function LandingPage() {
       {/* ======================================================== */}
       <section id="how-it-works" className="py-20 bg-rose-50/40 border-t border-rose-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          
+
           {/* Header */}
           <div className="max-w-2xl mx-auto mb-16 space-y-3">
             <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white border border-rose-200 text-cherry-700 text-xs font-extrabold uppercase tracking-wider shadow-sm">
@@ -513,7 +678,7 @@ export default function LandingPage() {
 
           {/* 3 Step Flow */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative max-w-5xl mx-auto">
-            
+
             {/* Step 01: Find */}
             <div className="bg-white p-8 rounded-3xl border border-rose-100 shadow-sm hover:shadow-md transition-all text-center space-y-4 group">
               <div className="w-16 h-16 rounded-2xl bg-rose-50 border border-rose-200 text-cherry-600 mx-auto flex items-center justify-center group-hover:scale-110 transition-transform shadow-inner">
@@ -567,7 +732,7 @@ export default function LandingPage() {
       <section className="py-20 bg-white border-t border-rose-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-            
+
             {/* Left Column */}
             <div className="lg:col-span-5 space-y-6">
               <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-rose-50 border border-rose-200 text-cherry-700 text-xs font-extrabold uppercase tracking-wider">
@@ -604,7 +769,7 @@ export default function LandingPage() {
             {/* Right Column: 4 Cards (2x2 Grid) */}
             <div className="lg:col-span-7">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                
+
                 {/* Protocol 01 */}
                 <div className="p-6 rounded-2xl bg-rose-50/50 border border-rose-100 hover:border-cherry-300 shadow-sm transition-all space-y-3">
                   <div className="flex items-center justify-between">
@@ -673,9 +838,9 @@ export default function LandingPage() {
       {/* ======================================================== */}
       <section id="safety" className="py-20 bg-rose-50/40 border-t border-rose-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          
+
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-            
+
             {/* Left Column: 5 Features */}
             <div className="lg:col-span-6 space-y-6">
               <div>
@@ -692,7 +857,7 @@ export default function LandingPage() {
 
               {/* 5 Feature Badges/Cards */}
               <div className="space-y-3 pt-2">
-                
+
                 {/* 1 */}
                 <div className="p-3.5 rounded-2xl bg-white border border-rose-100 shadow-sm flex items-center gap-3.5 hover:border-cherry-300 transition-colors">
                   <div className="w-9 h-9 rounded-xl bg-rose-50 text-cherry-600 flex items-center justify-center shrink-0">
@@ -754,13 +919,13 @@ export default function LandingPage() {
             {/* Right Column: Smartphone Mockup with Handover Screen */}
             <div className="lg:col-span-6 flex justify-center relative">
               <div className="relative w-full max-w-sm">
-                
+
                 {/* Glowing Cherry Aura */}
                 <div className="absolute inset-0 bg-gradient-to-tr from-cherry-500/20 via-rose-300/30 to-amber-200/20 rounded-[40px] blur-2xl -z-10" />
 
                 {/* Smartphone Container */}
                 <div className="bg-slate-950 p-4 rounded-[42px] shadow-2xl border-4 border-slate-800 shadow-rose-950/20 text-white relative">
-                  
+
                   {/* Speaker notch */}
                   <div className="w-28 h-4 bg-slate-900 rounded-full mx-auto mb-4 flex items-center justify-center">
                     <div className="w-3 h-3 rounded-full bg-slate-950" />
@@ -768,7 +933,7 @@ export default function LandingPage() {
 
                   {/* Mobile Screen App UI */}
                   <div className="bg-slate-900 rounded-[30px] p-6 space-y-6 border border-slate-800 text-center">
-                    
+
                     {/* Animated green check circle */}
                     <div className="w-16 h-16 rounded-full bg-emerald-500/20 border-2 border-emerald-400 text-emerald-400 mx-auto flex items-center justify-center animate-pulse">
                       <CheckCircle2 className="w-9 h-9" />
@@ -781,9 +946,9 @@ export default function LandingPage() {
 
                     {/* Rental Asset Mini Card */}
                     <div className="bg-slate-800/80 p-3.5 rounded-2xl border border-slate-700/60 text-left flex items-center gap-3">
-                      <img 
-                        src="/images/cat_cameras.jpg" 
-                        alt="Sony A7 IV" 
+                      <img
+                        src="/images/cat_cameras.jpg"
+                        alt="Sony A7 IV"
                         className="w-12 h-12 rounded-xl object-cover"
                       />
                       <div className="flex-1">
@@ -824,20 +989,20 @@ export default function LandingPage() {
       {/* ======================================================== */}
       <section id="for-hosts" className="py-20 bg-white border-t border-rose-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          
+
           <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-slate-950 via-slate-900 to-rose-950 text-white shadow-2xl border border-rose-900/40">
-            
+
             {/* Background Studio Image with Cherry Overlay */}
             <div className="absolute inset-0 opacity-25 mix-blend-overlay">
-              <img 
-                src="/images/host_gear_table.jpg" 
-                alt="Studio creator gear" 
+              <img
+                src="/images/host_gear_table.jpg"
+                alt="Studio creator gear"
                 className="w-full h-full object-cover"
               />
             </div>
 
             <div className="relative z-10 p-8 sm:p-12 lg:p-16 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-              
+
               {/* Left Side: Host Headline & CTA */}
               <div className="lg:col-span-7 space-y-6 text-left">
                 <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-cherry-600/30 border border-cherry-400/40 text-cherry-300 text-xs font-bold uppercase tracking-wider">
@@ -865,7 +1030,7 @@ export default function LandingPage() {
 
               {/* Right Side: 3 Host Benefits */}
               <div className="lg:col-span-5 space-y-4">
-                
+
                 {/* Benefit 1 */}
                 <div className="p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/10 flex items-center gap-4">
                   <div className="w-12 h-12 rounded-xl bg-cherry-600/30 border border-cherry-400/40 text-cherry-300 flex items-center justify-center shrink-0">
@@ -913,7 +1078,7 @@ export default function LandingPage() {
       {/* ======================================================== */}
       <section className="py-20 bg-rose-50/40 border-t border-rose-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          
+
           {/* Section Header */}
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-12">
             <div>
@@ -957,9 +1122,9 @@ export default function LandingPage() {
 
                 {/* User Info */}
                 <div className="flex items-center gap-3 pt-4 border-t border-rose-100">
-                  <img 
-                    src={item.avatar} 
-                    alt={item.name} 
+                  <img
+                    src={item.avatar}
+                    alt={item.name}
                     className="w-10 h-10 rounded-full object-cover border border-rose-200"
                   />
                   <div>
@@ -978,19 +1143,19 @@ export default function LandingPage() {
       {/* 9. PRE-FOOTER CTA BANNER ("More Gear. More Possibilities") */}
       {/* ======================================================== */}
       <section className="relative overflow-hidden py-24 border-t border-rose-100">
-        
+
         {/* Background Mountain Vista Image with Cherry Glow */}
         <div className="absolute inset-0 -z-10">
-          <img 
-            src="/images/cta_mountain_banner.jpg" 
-            alt="More Possibilities" 
+          <img
+            src="/images/cta_mountain_banner.jpg"
+            alt="More Possibilities"
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-cherry-950/80 to-slate-950/80" />
         </div>
 
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white space-y-6 relative z-10">
-          
+
           {/* Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-cherry-600/40 border border-cherry-400/50 text-white text-xs font-bold uppercase tracking-wider">
             Ready to get started?
@@ -1036,9 +1201,9 @@ export default function LandingPage() {
       {/* ======================================================== */}
       <footer id="about" className="bg-white border-t border-rose-200 pt-16 pb-12 text-slate-600">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 pb-12 border-b border-rose-100">
-            
+
             {/* Column 1: Brand & Tagline */}
             <div className="lg:col-span-1 space-y-4 text-left">
               <a href="#" className="flex items-center gap-1.5">
@@ -1113,10 +1278,10 @@ export default function LandingPage() {
               <p className="text-xs text-slate-500">
                 Get the best rental experience on your mobile.
               </p>
-              
+
               <div className="space-y-2 pt-1">
                 {/* App Store button */}
-                <button 
+                <button
                   onClick={() => navigate('/login')}
                   className="w-full py-2 px-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl flex items-center justify-center gap-2 text-xs font-bold transition-all shadow-sm"
                 >
@@ -1124,7 +1289,7 @@ export default function LandingPage() {
                   <span>Download for iOS</span>
                 </button>
                 {/* Google Play button */}
-                <button 
+                <button
                   onClick={() => navigate('/login')}
                   className="w-full py-2 px-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl flex items-center justify-center gap-2 text-xs font-bold transition-all shadow-sm"
                 >
@@ -1158,7 +1323,7 @@ export default function LandingPage() {
                 <Search className="w-4 h-4 text-cherry-600" />
                 Search Rental Gear
               </h3>
-              <button 
+              <button
                 onClick={() => setSearchModalOpen(false)}
                 className="p-1 rounded-full text-slate-400 hover:text-slate-700 hover:bg-rose-50"
               >
@@ -1169,7 +1334,7 @@ export default function LandingPage() {
             <form onSubmit={handleSearchSubmit} className="space-y-4">
               <div className="relative">
                 <Search className="w-5 h-5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                <input 
+                <input
                   type="text"
                   placeholder="E.g., Sony A7 IV, DJI Drone, PS5, MacBook Pro..."
                   value={searchQuery}
@@ -1221,7 +1386,7 @@ export default function LandingPage() {
       {trustModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4">
           <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full border border-rose-100 shadow-2xl space-y-6 animate-in fade-in zoom-in-95 duration-200 text-left">
-            
+
             <div className="flex justify-between items-center pb-3 border-b border-rose-100">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-xl bg-rose-50 text-cherry-600 flex items-center justify-center font-bold">
@@ -1232,7 +1397,7 @@ export default function LandingPage() {
                   <p className="text-[10px] text-slate-400">Zero-Deposit Protocol Simulator</p>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => setTrustModalOpen(false)}
                 className="p-1 rounded-full text-slate-400 hover:text-slate-700 hover:bg-rose-50"
               >
@@ -1246,7 +1411,7 @@ export default function LandingPage() {
                 <span className="text-xs font-semibold text-slate-600">Simulate CIBIL Score</span>
                 <span className="text-xl font-black text-cherry-600">{demoCibil}</span>
               </div>
-              
+
               <input
                 type="range"
                 min="300"
@@ -1326,7 +1491,7 @@ export default function LandingPage() {
           <div className="bg-white rounded-3xl p-6 max-w-sm w-full border border-rose-100 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-200 text-left">
             <div className="flex justify-between items-center pb-2 border-b border-rose-100">
               <h3 className="font-extrabold text-slate-900 text-base">{selectedCategory.title}</h3>
-              <button 
+              <button
                 onClick={() => setSelectedCategory(null)}
                 className="p-1 rounded-full text-slate-400 hover:text-slate-700 hover:bg-rose-50"
               >
@@ -1335,9 +1500,9 @@ export default function LandingPage() {
             </div>
 
             <div className="w-full aspect-video rounded-2xl overflow-hidden bg-rose-50 border border-rose-100">
-              <img 
-                src={selectedCategory.image} 
-                alt={selectedCategory.title} 
+              <img
+                src={selectedCategory.image}
+                alt={selectedCategory.title}
                 className="w-full h-full object-cover"
               />
             </div>
