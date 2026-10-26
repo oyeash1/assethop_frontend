@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Sparkles,
@@ -23,7 +23,11 @@ import {
   Sliders,
   Menu,
   Smartphone,
-  ExternalLink
+  ExternalLink,
+  QrCode,
+  MapPin,
+  Clock,
+  Check
 } from 'lucide-react';
 
 export default function LandingPage() {
@@ -34,6 +38,78 @@ export default function LandingPage() {
   const [trustModalOpen, setTrustModalOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const categoryScrollRef = useRef(null);
+
+  // 1. Dynamic Rotating Headline Typography Animation
+  const rotatingWords = [
+    'Zero Deposit.',
+    'Instant KYC.',
+    '100% Insured.',
+    'Zero Hassle.',
+    'Pure Freedom.'
+  ];
+  const [wordIndex, setWordIndex] = useState(0);
+  const [wordKey, setWordKey] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setWordIndex((prev) => (prev + 1) % rotatingWords.length);
+      setWordKey((prev) => prev + 1);
+    }, 2800);
+    return () => clearInterval(interval);
+  }, [rotatingWords.length]);
+
+  // 2. Interactive Typewriter Typography Animation
+  const typewriterQueries = [
+    'Sony Alpha FX3 Cinema Camera...',
+    'DJI Mini 4 Pro 4K Drone...',
+    'Apple MacBook Pro M3 Max...',
+    'PlayStation 5 Disc Edition...',
+    'BenQ 4K HDR Laser Projector...',
+    'Geodesic 4-Person Camping Tent...'
+  ];
+  const [displayedText, setDisplayedText] = useState('');
+  const [typewriterIndex, setTypewriterIndex] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    const currentQuery = typewriterQueries[typewriterIndex];
+    const typingSpeed = isDeleting ? 30 : 65;
+
+    const timer = setTimeout(() => {
+      if (!isDeleting) {
+        if (displayedText.length < currentQuery.length) {
+          setDisplayedText(currentQuery.slice(0, displayedText.length + 1));
+        } else {
+          setTimeout(() => setIsDeleting(true), 1800);
+        }
+      } else {
+        if (displayedText.length > 0) {
+          setDisplayedText(currentQuery.slice(0, displayedText.length - 1));
+        } else {
+          setIsDeleting(false);
+          setTypewriterIndex((prev) => (prev + 1) % typewriterQueries.length);
+        }
+      }
+    }, typingSpeed);
+
+    return () => clearTimeout(timer);
+  }, [displayedText, isDeleting, typewriterIndex, typewriterQueries]);
+
+  // 3. Infinite Typography Marquee Items
+  const marqueeItems = [
+    'DSLR & CINEMA CAMERAS',
+    'ZERO DEPOSIT POLICY',
+    'DJI DRONES & GIMBALS',
+    'INSTANT KYC CHECK',
+    'APPLE MACBOOKS & IPADS',
+    'NO HIDDEN CHARGES',
+    'PS5 & XBOX SERIES X',
+    '100% DAMAGE PROTECTION',
+    '4K LASER PROJECTORS',
+    '12,000+ VERIFIED RENTALS',
+    'STUDIO AUDIO GEAR',
+    'TREKKING & CAMPING TENTS'
+  ];
 
   const scrollCategories = (direction) => {
     if (categoryScrollRef.current) {
@@ -310,10 +386,17 @@ export default function LandingPage() {
                 <span>The Zero-Deposit Rental Marketplace</span>
               </div>
 
-              {/* Main Headline */}
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-[#080D20] leading-[1.12]">
+              {/* Main Headline with Animated Word Cycle & Shimmer */}
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-[#080D20] leading-[1.14]">
                 Rent Better. Own Less. <br />
-                <span className="text-[#A10D0D]">Zero Deposit.</span>
+                <span className="inline-block relative overflow-hidden h-[1.25em] align-bottom">
+                  <span
+                    key={wordKey}
+                    className="inline-block animate-word-cycle animate-shimmer-cherry font-black"
+                  >
+                    {rotatingWords[wordIndex]}
+                  </span>
+                </span>
               </h1>
 
               {/* Description */}
@@ -321,8 +404,26 @@ export default function LandingPage() {
                 From cameras and drones to gaming consoles and laptops — rent premium equipment from verified people near you, without the upfront deposit for eligible users.
               </p>
 
+              {/* Interactive Typewriter Live Search Bar */}
+              <div
+                onClick={() => setSearchModalOpen(true)}
+                className="group cursor-pointer bg-white/95 hover:bg-white border border-rose-200/90 hover:border-cherry-500 p-2 sm:p-2.5 rounded-2xl shadow-sm hover:shadow-md transition-all flex items-center gap-3 max-w-lg"
+              >
+                <div className="w-8 h-8 rounded-xl bg-rose-50 group-hover:bg-cherry-600 text-cherry-600 group-hover:text-white flex items-center justify-center transition-colors shrink-0">
+                  <Search className="w-4 h-4" />
+                </div>
+                <div className="flex-1 text-xs sm:text-sm text-slate-500 overflow-hidden text-ellipsis whitespace-nowrap flex items-center">
+                  <span className="font-semibold text-slate-400 mr-2 shrink-0">Try searching:</span>
+                  <span className="font-bold text-slate-800">{displayedText}</span>
+                  <span className="inline-block w-0.5 h-4 bg-cherry-600 ml-1 cursor-blink"></span>
+                </div>
+                <span className="text-[11px] font-extrabold text-cherry-700 bg-rose-100/80 group-hover:bg-cherry-600 group-hover:text-white px-2.5 py-1 rounded-lg transition-colors shrink-0">
+                  Search
+                </span>
+              </div>
+
               {/* Buttons */}
-              <div className="flex flex-wrap items-center gap-4 pt-2">
+              <div className="flex flex-wrap items-center gap-4 pt-1">
                 <a
                   href="#categories"
                   className="px-8 py-3.5 bg-cherry-600 hover:bg-cherry-700 text-white font-bold rounded-full transition-all duration-300 shadow-lg shadow-cherry-600/30 hover:shadow-xl hover:shadow-cherry-600/40 hover:-translate-y-0.5 flex items-center gap-2 text-sm"
@@ -434,19 +535,36 @@ export default function LandingPage() {
       </section>
 
       {/* ======================================================== */}
+      {/* TYPOGRAPHY MARQUEE STRIP (Infinite Scrolling Ribbon)     */}
+      {/* ======================================================== */}
+      <div className="w-full bg-gradient-to-r from-rose-50/70 via-white to-rose-50/70 border-y border-rose-200/70 py-3.5 overflow-hidden select-none relative shadow-sm">
+        <div className="animate-marquee flex items-center gap-8 whitespace-nowrap">
+          {[...marqueeItems, ...marqueeItems].map((item, idx) => (
+            <div key={idx} className="flex items-center gap-8">
+              <span className="text-xs sm:text-sm font-black tracking-wider text-slate-800 uppercase hover:text-cherry-600 transition-colors cursor-default">
+                {item}
+              </span>
+              <span className="w-1.5 h-1.5 rounded-full bg-cherry-600/80 animate-pulse"></span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ======================================================== */}
       {/* 3. POPULAR CATEGORIES SECTION                            */}
       {/* ======================================================== */}
-      <section id="categories" className="py-20 bg-white border-t border-rose-100">
+      <section id="categories" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
           {/* Section Header */}
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-12">
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-50 border border-rose-200 text-cherry-700 text-xs font-extrabold uppercase tracking-wider mb-3">
+                <span className="w-1.5 h-1.5 rounded-full bg-cherry-600 animate-ping"></span>
                 Popular Categories
               </div>
               <h2 className="text-3xl sm:text-4xl font-black text-slate-950 tracking-tight">
-                Find What You Need
+                Find What You <span className="animate-shimmer-cherry">Need</span>
               </h2>
               <p className="text-sm sm:text-base text-slate-600 mt-2 max-w-2xl">
                 From creative shoots to epic gaming sessions — rent exactly what you need, when you need it.
@@ -654,69 +772,231 @@ export default function LandingPage() {
       </section>
 
       {/* ======================================================== */}
-      {/* 4. HOW ASSETHOP WORKS SECTION                            */}
+      {/* 4. HOW ASSETHOP WORKS SECTION (Linear / SaaS Style)      */}
       {/* ======================================================== */}
-      <section id="how-it-works" className="py-20 bg-rose-50/40 border-t border-rose-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <section id="how-it-works" className="py-24 bg-gradient-to-b from-white via-rose-50/25 to-white border-t border-rose-100/80 relative overflow-hidden">
+        {/* Subtle background ambient pattern */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[850px] h-[400px] bg-gradient-to-r from-rose-200/20 via-cherry-100/15 to-transparent rounded-full blur-3xl pointer-events-none -z-10" />
 
-          {/* Header */}
-          <div className="max-w-2xl mx-auto mb-16 space-y-3">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white border border-rose-200 text-cherry-700 text-xs font-extrabold uppercase tracking-wider shadow-sm">
-              Simple & Secure
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-left">
+
+          {/* Section Header */}
+          <div className="max-w-2xl mx-auto text-center mb-16 space-y-3">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white border border-rose-200 text-cherry-700 text-xs font-bold uppercase tracking-wider shadow-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-cherry-600 animate-pulse"></span>
+              Frictionless 3-Step Flow
             </div>
-            <h2 className="text-3xl sm:text-4xl font-black text-slate-950 tracking-tight">
-              How AssetHop Works
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-950 tracking-tight leading-tight">
+              How <span className="animate-shimmer-cherry">AssetHop</span> Works
             </h2>
-            <p className="text-sm sm:text-base text-slate-600">
-              Get the gear you need in just 3 easy steps.
+            <p className="text-sm sm:text-base text-slate-600 leading-relaxed max-w-xl mx-auto">
+              From finding top-tier equipment to seamless return — rent with zero deposit, fully insured and peer-verified.
             </p>
           </div>
 
-          {/* 3 Step Flow */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative max-w-5xl mx-auto">
+          {/* 3 Step Flow Grid with Connecting Directional Connectors */}
+          <div className="relative max-w-6xl mx-auto">
 
-            {/* Step 01: Find */}
-            <div className="bg-white p-8 rounded-3xl border border-rose-100 shadow-sm hover:shadow-md transition-all text-center space-y-4 group">
-              <div className="w-16 h-16 rounded-2xl bg-rose-50 border border-rose-200 text-cherry-600 mx-auto flex items-center justify-center group-hover:scale-110 transition-transform shadow-inner">
-                <Search className="w-7 h-7" />
-              </div>
-              <div className="inline-block px-2.5 py-0.5 bg-rose-100 text-cherry-800 text-[11px] font-black rounded-full uppercase">
-                Step 01
-              </div>
-              <h3 className="text-xl font-bold text-slate-900">Find</h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Browse from 1000+ verified assets near you.
-              </p>
+            {/* Desktop Process Flow Connectors: ─── > ─── */}
+            <div className="hidden lg:flex items-center absolute top-[36%] left-[33.33%] -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none">
+              <span className="w-6 h-[1.5px] bg-rose-200 rounded-full"></span>
+              <span className="text-cherry-600 mx-0.5">
+                <ChevronRight className="w-3.5 h-3.5 stroke-[2.5]" />
+              </span>
+              <span className="w-6 h-[1.5px] bg-rose-200 rounded-full"></span>
+            </div>
+            <div className="hidden lg:flex items-center absolute top-[36%] left-[66.66%] -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none">
+              <span className="w-6 h-[1.5px] bg-rose-200 rounded-full"></span>
+              <span className="text-cherry-600 mx-0.5">
+                <ChevronRight className="w-3.5 h-3.5 stroke-[2.5]" />
+              </span>
+              <span className="w-6 h-[1.5px] bg-rose-200 rounded-full"></span>
             </div>
 
-            {/* Step 02: Book */}
-            <div className="bg-white p-8 rounded-3xl border border-rose-100 shadow-sm hover:shadow-md transition-all text-center space-y-4 group">
-              <div className="w-16 h-16 rounded-2xl bg-rose-50 border border-rose-200 text-cherry-600 mx-auto flex items-center justify-center group-hover:scale-110 transition-transform shadow-inner">
-                <Calendar className="w-7 h-7" />
-              </div>
-              <div className="inline-block px-2.5 py-0.5 bg-rose-100 text-cherry-800 text-[11px] font-black rounded-full uppercase">
-                Step 02
-              </div>
-              <h3 className="text-xl font-bold text-slate-900">Book</h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Choose your dates, complete verification and book securely.
-              </p>
-            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-7 items-stretch">
 
-            {/* Step 03: Use & Return */}
-            <div className="bg-white p-8 rounded-3xl border border-rose-100 shadow-sm hover:shadow-md transition-all text-center space-y-4 group">
-              <div className="w-16 h-16 rounded-2xl bg-rose-50 border border-rose-200 text-cherry-600 mx-auto flex items-center justify-center group-hover:scale-110 transition-transform shadow-inner">
-                <Package className="w-7 h-7" />
-              </div>
-              <div className="inline-block px-2.5 py-0.5 bg-rose-100 text-cherry-800 text-[11px] font-black rounded-full uppercase">
-                Step 03
-              </div>
-              <h3 className="text-xl font-bold text-slate-900">Use & Return</h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Pick up the asset, use it and return it on time.
-              </p>
-            </div>
+              {/* ----------------- CARD 1: FIND ----------------- */}
+              <div className="group relative bg-white rounded-[16px] border border-neutral-200/80 p-6 sm:p-7 shadow-sm hover:shadow-xl hover:-translate-y-1 hover:border-rose-300 transition-all duration-300 flex flex-col justify-between overflow-hidden text-left">
+                {/* Watermark Step Number */}
+                <span className="absolute top-3 right-4 text-5xl sm:text-6xl font-black text-slate-100/90 group-hover:text-rose-100 transition-colors pointer-events-none select-none tracking-tighter">
+                  01
+                </span>
 
+                <div>
+                  {/* Step Tag */}
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-rose-50 border border-rose-200 text-cherry-700 text-[11px] font-extrabold uppercase tracking-wider mb-4 shadow-2xs">
+                    <Search className="w-3.5 h-3.5" />
+                    <span>Step 01</span>
+                  </div>
+
+                  {/* Title & Desc */}
+                  <h3 className="text-xl font-bold text-slate-900 group-hover:text-cherry-700 transition-colors tracking-tight">
+                    Browse & Discover
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mt-2">
+                    Search 1000+ verified cinema cameras, drones, laptops & gear listed by creators near you.
+                  </p>
+                </div>
+
+                {/* Embedded Mini-UI Preview: Mock Search Bar + Category Pills (Static Mockup) */}
+                <div className="mt-auto pt-5">
+                  <div className="bg-slate-50/90 rounded-xl p-3 border border-slate-200/70 space-y-2.5 shadow-inner select-none pointer-events-none cursor-default">
+                    {/* Static Mock Search Bar */}
+                    <div className="bg-white rounded-lg px-3 py-2 border border-slate-200 shadow-xs flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2 truncate">
+                        <Search className="w-3.5 h-3.5 text-cherry-600 shrink-0" />
+                        <span className="text-slate-500 font-medium truncate text-[11px] sm:text-xs">
+                          Search gear, cameras, projectors...
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 shrink-0">
+                        ⌘K
+                      </span>
+                    </div>
+
+                    {/* Static Category Pills */}
+                    <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                      {['Cameras', 'Lenses', 'Drones', 'Audio'].map((pill, i) => (
+                        <span
+                          key={i}
+                          className={`text-[11px] font-bold px-2.5 py-1 rounded-md cursor-default ${i === 0
+                            ? 'bg-cherry-600 text-white shadow-xs'
+                            : 'bg-white text-slate-700 border border-slate-200'
+                            }`}
+                        >
+                          {pill}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* ----------------- CARD 2: BOOK ----------------- */}
+              <div className="group relative bg-white rounded-[16px] border border-neutral-200/80 p-6 sm:p-7 shadow-sm hover:shadow-xl hover:-translate-y-1 hover:border-rose-300 transition-all duration-300 flex flex-col justify-between overflow-hidden text-left">
+                {/* Watermark Step Number */}
+                <span className="absolute top-3 right-4 text-5xl sm:text-6xl font-black text-slate-100/90 group-hover:text-rose-100 transition-colors pointer-events-none select-none tracking-tighter">
+                  02
+                </span>
+
+                <div>
+                  {/* Step Tag */}
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-rose-50 border border-rose-200 text-cherry-700 text-[11px] font-extrabold uppercase tracking-wider mb-4 shadow-2xs">
+                    <Calendar className="w-3.5 h-3.5" />
+                    <span>Step 02</span>
+                  </div>
+
+                  {/* Title & Desc */}
+                  <h3 className="text-xl font-bold text-slate-900 group-hover:text-cherry-700 transition-colors tracking-tight">
+                    Instant Booking
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mt-2">
+                    Pick your rental dates and qualify for automated zero-deposit approval with instant verification.
+                  </p>
+                </div>
+
+                {/* Embedded Mini-UI Preview: Calendar Date Range + Instant Verification Badge */}
+                <div className="mt-auto pt-5">
+                  <div className="bg-slate-50/90 rounded-xl p-3 border border-slate-200/70 space-y-2.5 shadow-inner">
+                    {/* Date Range Selection Box */}
+                    <div className="bg-white rounded-lg p-2.5 border border-slate-200 shadow-xs flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-rose-50 border border-rose-100 text-cherry-600 flex items-center justify-center shrink-0">
+                          <Calendar className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Rental Window</p>
+                          <p className="text-xs font-bold text-slate-900">
+                            Oct 12 — Oct 15 <span className="text-slate-400 font-medium text-[11px]">(3 Days)</span>
+                          </p>
+                        </div>
+                      </div>
+                      <span className="text-[11px] font-bold text-cherry-600 bg-rose-50/80 px-2 py-0.5 rounded border border-rose-200 shrink-0">
+                        ₹1,499/day
+                      </span>
+                    </div>
+
+                    {/* Instant Verification Badge */}
+                    <div className="flex items-center justify-between px-2.5 py-1.5 bg-emerald-50/90 border border-emerald-200/80 rounded-lg text-emerald-800">
+                      <div className="flex items-center gap-1.5">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <span className="text-[11px] font-bold">Instant Verification</span>
+                      </div>
+                      <span className="text-[10px] font-black uppercase text-emerald-700 bg-white px-1.5 py-0.5 rounded shadow-2xs border border-emerald-100">
+                        ✓ 0 Deposit
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* ----------------- CARD 3: USE & RETURN ----------------- */}
+              <div className="group relative bg-white rounded-[16px] border border-neutral-200/80 p-6 sm:p-7 shadow-sm hover:shadow-xl hover:-translate-y-1 hover:border-rose-300 transition-all duration-300 flex flex-col justify-between overflow-hidden text-left">
+                {/* Watermark Step Number */}
+                <span className="absolute top-3 right-4 text-5xl sm:text-6xl font-black text-slate-100/90 group-hover:text-rose-100 transition-colors pointer-events-none select-none tracking-tighter">
+                  03
+                </span>
+
+                <div>
+                  {/* Step Tag */}
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-rose-50 border border-rose-200 text-cherry-700 text-[11px] font-extrabold uppercase tracking-wider mb-4 shadow-2xs">
+                    <Package className="w-3.5 h-3.5" />
+                    <span>Step 03</span>
+                  </div>
+
+                  {/* Title & Desc */}
+                  <h3 className="text-xl font-bold text-slate-900 group-hover:text-cherry-700 transition-colors tracking-tight">
+                    Pickup & Return
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mt-2">
+                    Meet your host, verify condition with photos, shoot your project, and return on time.
+                  </p>
+                </div>
+
+                {/* Embedded Mini-UI Preview: Stylized QR Handover Pass with 'Ready for Pickup' badge */}
+                <div className="mt-auto pt-5">
+                  <div className="bg-slate-50/90 rounded-xl p-3 border border-slate-200/70 space-y-2.5 shadow-inner">
+                    {/* Handover Pass Ticket */}
+                    <div className="bg-white rounded-lg p-2.5 border border-slate-200 shadow-xs space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                          <span className="text-[11px] font-extrabold text-emerald-700 uppercase tracking-wide">
+                            Ready for Pickup
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-mono text-slate-400 font-semibold bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100">
+                          #HOP-8492
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-1.5 border-t border-slate-100">
+                        <div>
+                          <p className="font-bold text-slate-900 text-xs">Host: Vikram Sharma</p>
+                          <p className="text-[10px] text-slate-500">Koramangala 4th Block • 0.8 km</p>
+                        </div>
+                        <div className="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center p-1.5 shrink-0 shadow-sm">
+                          <QrCode className="w-full h-full text-rose-200" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Timeline & Return status with more top padding & subtle badge */}
+                    <div className="flex items-center justify-between pt-2 pb-0.5 px-2.5 text-[10px] text-slate-500 font-medium">
+                      <span className="flex items-center gap-1.5">
+                        <Clock className="w-3 h-3 text-slate-400" />
+                        Return: Oct 15, 6:00 PM
+                      </span>
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-cherry-700 bg-rose-50 border border-rose-200/90 px-2 py-0.5 rounded-md shadow-2xs">
+                        <ShieldCheck className="w-3 h-3 text-cherry-600" />
+                        100% Insured
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
           </div>
 
         </div>
@@ -732,11 +1012,12 @@ export default function LandingPage() {
             {/* Left Column */}
             <div className="lg:col-span-5 space-y-6">
               <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-rose-50 border border-rose-200 text-cherry-700 text-xs font-extrabold uppercase tracking-wider">
+                <span className="w-1.5 h-1.5 rounded-full bg-cherry-600 animate-pulse"></span>
                 Built For Trust
               </div>
 
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-950 tracking-tight leading-tight">
-                The Zero-Deposit Protocol
+                The <span className="animate-shimmer-cherry">Zero-Deposit Protocol</span>
               </h2>
 
               <p className="text-base text-slate-600 leading-relaxed">
@@ -841,10 +1122,11 @@ export default function LandingPage() {
             <div className="lg:col-span-6 space-y-6">
               <div>
                 <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white border border-rose-200 text-cherry-700 text-xs font-extrabold uppercase tracking-wider mb-3 shadow-sm">
+                  <span className="w-1.5 h-1.5 rounded-full bg-cherry-600 animate-pulse"></span>
                   Your Safety, Our Priority
                 </div>
                 <h2 className="text-3xl sm:text-4xl font-black text-slate-950 tracking-tight">
-                  Rent Without the Stress
+                  Rent Without the <span className="animate-shimmer-cherry">Stress</span>
                 </h2>
                 <p className="text-sm sm:text-base text-slate-600 mt-2">
                   We've got you covered, so you can focus on what matters.
@@ -986,27 +1268,29 @@ export default function LandingPage() {
       <section id="for-hosts" className="py-20 bg-white border-t border-rose-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-          <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-slate-950 via-slate-900 to-rose-950 text-white shadow-2xl border border-rose-900/40">
+          <div className="relative rounded-3xl overflow-hidden bg-slate-950 text-white shadow-2xl border border-rose-900/40">
 
-            {/* Background Studio Image with Cherry Overlay */}
-            <div className="absolute inset-0 opacity-25 mix-blend-overlay">
-              <img
-                src="/images/host_gear_table.jpg"
-                alt="Studio creator gear"
-                className="w-full h-full object-cover"
-              />
-            </div>
+            {/* Background Studio Image (Higher Visibility) */}
+            <img
+              src="/images/host_gear_table.jpg"
+              alt="Studio creator gear"
+              className="absolute inset-0 w-full h-full object-cover opacity-100"
+            />
+
+            {/* Soft Gradient Overlay (Text readability on left, clear image on right) */}
+            <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/65 to-rose-950/30 pointer-events-none" />
 
             <div className="relative z-10 p-8 sm:p-12 lg:p-16 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
 
               {/* Left Side: Host Headline & CTA */}
               <div className="lg:col-span-7 space-y-6 text-left">
                 <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-cherry-600/30 border border-cherry-400/40 text-cherry-300 text-xs font-bold uppercase tracking-wider">
+                  <span className="w-1.5 h-1.5 rounded-full bg-cherry-400 animate-pulse"></span>
                   For Hosts
                 </div>
 
                 <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight">
-                  Your Gear Could Be Earning While You're Not Using It.
+                  Your Gear Could Be <span className="animate-shimmer-light">Earning</span> While You're Not Using It.
                 </h2>
 
                 <p className="text-sm sm:text-base text-slate-300 max-w-xl leading-relaxed">
@@ -1079,10 +1363,11 @@ export default function LandingPage() {
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-12">
             <div>
               <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white border border-rose-200 text-cherry-700 text-xs font-extrabold uppercase tracking-wider mb-3 shadow-sm">
+                <span className="w-1.5 h-1.5 rounded-full bg-cherry-600 animate-pulse"></span>
                 Real People, Real Rentals
               </div>
               <h2 className="text-3xl sm:text-4xl font-black text-slate-950 tracking-tight">
-                What Our Users Say
+                What Our <span className="animate-shimmer-cherry">Users Say</span>
               </h2>
             </div>
 
@@ -1154,12 +1439,13 @@ export default function LandingPage() {
 
           {/* Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-cherry-600/40 border border-cherry-400/50 text-white text-xs font-bold uppercase tracking-wider">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-300 animate-pulse"></span>
             Ready to get started?
           </div>
 
           {/* Headline */}
           <h2 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight">
-            More Gear. More Possibilities.
+            More Gear. <span className="animate-shimmer-light">More Possibilities.</span>
           </h2>
 
           <p className="text-sm sm:text-base text-slate-300 max-w-xl mx-auto leading-relaxed">
@@ -1484,18 +1770,18 @@ export default function LandingPage() {
       {/* ======================================================== */}
       {selectedCategory && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-3xl p-6 max-w-sm w-full border border-rose-100 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-200 text-left">
-            <div className="flex justify-between items-center pb-2 border-b border-rose-100">
-              <h3 className="font-extrabold text-slate-900 text-base">{selectedCategory.title}</h3>
+          <div className="bg-white rounded-[14px] p-6 sm:p-7 max-w-lg w-full border border-rose-100 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200 text-left">
+            <div className="flex justify-between items-center pb-3 border-b border-rose-100">
+              <h3 className="font-extrabold text-slate-900 text-lg sm:text-xl">{selectedCategory.title}</h3>
               <button
                 onClick={() => setSelectedCategory(null)}
-                className="p-1 rounded-full text-slate-400 hover:text-slate-700 hover:bg-rose-50"
+                className="p-1.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-rose-50 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="w-full aspect-video rounded-2xl overflow-hidden bg-rose-50 border border-rose-100">
+            <div className="w-full aspect-video rounded-xl overflow-hidden bg-rose-50 border border-rose-100">
               <img
                 src={selectedCategory.image}
                 alt={selectedCategory.title}
@@ -1503,9 +1789,9 @@ export default function LandingPage() {
               />
             </div>
 
-            <div className="space-y-1">
-              <p className="text-xs font-bold text-cherry-600">{selectedCategory.count}</p>
-              <p className="text-xs text-slate-600">{selectedCategory.desc}</p>
+            <div className="space-y-1.5">
+              <p className="text-sm font-bold text-cherry-600">{selectedCategory.count}</p>
+              <p className="text-sm text-slate-600 leading-relaxed">{selectedCategory.desc}</p>
             </div>
 
             <button
@@ -1513,7 +1799,7 @@ export default function LandingPage() {
                 setSelectedCategory(null);
                 navigate('/login');
               }}
-              className="w-full py-3 bg-cherry-600 hover:bg-cherry-700 text-white font-bold rounded-2xl text-xs shadow-md shadow-cherry-600/30 transition-colors flex items-center justify-center gap-2"
+              className="w-full py-3.5 bg-cherry-600 hover:bg-cherry-700 text-white font-bold rounded-xl text-sm shadow-md shadow-cherry-600/30 transition-colors flex items-center justify-center gap-2"
             >
               <span>Explore {selectedCategory.title}</span>
               <ArrowRight className="w-4 h-4" />
